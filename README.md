@@ -20,19 +20,19 @@ PCB Gerber files and Circuit Schematics will be included in repo
 
 Component List:
 
-STM32f74G-DISCO
-OK42FD34-0316MB-F1 Stepper motor x2
-Adafruit 6v Solenoid (they lie, i will be driving this at 12V or else it doesnt have enough oomphf to lift a pen)
-LM7805CV 5v regulator
-ULN2803A transistor array x2
-L297 stepper motor driver x2
-IRL540N MosFET
-12V Battery
+STM32f74G-DISCO\
+OK42FD34-0316MB-F1 Stepper motor x2\
+Adafruit 6v Solenoid (they lie, i will be driving this at 12V or else it doesnt have enough oomphf to lift a pen)\
+LM7805CV 5v regulator\
+ULN2803A transistor array x2\
+L297 stepper motor driver x2\
+IRL540N MosFET\
+12V Battery\
 
-Bunch of 3D printed crap, i will include STL files in the repo
+Bunch of 3D printed crap, i will include STL files in the repo\
 
-maybe i dont know this whole thing is speculation at this point
-big fat todo
+maybe i dont know this whole thing is speculation at this point\
+big fat todo\
 
 ## 3 - Embedded Code Implementation and Architechture
 todo
