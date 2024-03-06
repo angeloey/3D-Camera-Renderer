@@ -5,5 +5,4 @@ projectfiles
 mbed-os
 BUILD
 
-HC_SR04_Ultrasonic_Library
 BSP_DISCO_F746NG

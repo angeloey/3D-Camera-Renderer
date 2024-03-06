@@ -1,16 +1,13 @@
 #include "mbed.h"
 #include "stm32746g_discovery_lcd.h"
 #include "stm32746g_discovery_ts.h"
-#include "ultrasonic.h"
+
 #include "math.h"
-#include <cstdint>
 
 int valmap();
 void drawObject();
 void sensorUpdate();
 void touchCallback();
-
-InterruptIn blueButton();
 
 const double pi = 3.14159;
 uint16_t lastX;

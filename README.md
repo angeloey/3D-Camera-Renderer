@@ -21,6 +21,10 @@ Component List:
 STM32f74G-DISCO\
 todo\
 
+IR Sensor Datasheet: https://www.sparkfun.com/datasheets/Components/GP2Y0A21YK.pdf
+
+
+
 ## 3 - Embedded Code Implementation and Architechture
 todo
 
