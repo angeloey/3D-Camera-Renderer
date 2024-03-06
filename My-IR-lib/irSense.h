@@ -9,11 +9,13 @@ class irSense{
 
     float getDistance();
 
+    float voltage;
+
     private:
 
     float distance;
-    float voltage;
-    AnalogIn volt;
+    //float voltage;
+    AnalogIn voltIn;
 
 
 };

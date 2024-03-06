@@ -4,6 +4,8 @@
 
 #include "math.h"
 
+#include "irSense.h"
+
 int valmap();
 void drawObject();
 void sensorUpdate();
@@ -24,7 +26,7 @@ int valmap (float value, float istart, float istop, float ostart, float ostop){ 
     return mappedVal;
 }
 
-void drawObject(int16_t distance, uint16_t angle){ //draw a line from centre, where: length = distance sensed, and angle = current angle of the sensor
+void drawObject(float distance, float angle){ //draw a line from centre, where: length = distance sensed, and angle = current angle of the sensor
     BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
     BSP_LCD_DrawLine(240, 136, lastX + 240, lastY + 136); // overwrite last drawn line in black
 
@@ -41,25 +43,18 @@ void drawObject(int16_t distance, uint16_t angle){ //draw a line from centre, wh
     lastY = y; // store last used x,y values
 }
 
-void sensorUpdate(int distance){ // do this when the sensed distance changes
+void sensorUpdate(float distance){ // shit to do when updating sensor reading
     char text [50];
-    int8_t draw = valmap(distance,0,10000,1,1000);
-    if (draw > 100 || draw < 1){
-        draw = 100;
-    }
-    sprintf((char*)text, "Distance: %d", draw);
+
+    sprintf((char*)text, "Distance: %f", distance);
     BSP_LCD_ClearStringLine(LINE(0));
     BSP_LCD_DisplayStringAt(0, LINE(0), (uint8_t *)&text, LEFT_MODE);
-    drawObject(draw, fakeAngle); //placeholder angle till i go get a servo or stepper or something
+    drawObject(distance, fakeAngle); //placeholder angle till i go get a servo or stepper or something
 
 }
 
 int main(){
-    ultrasonic US(A4, A2, 0.1, 1, &sensorUpdate); // HCSR04 Ultrasonic Sensor
-    US.startUpdates();
-
-    TS_StateTypeDef TS_State;
-    BSP_TS_Init(BSP_LCD_GetXSize(), BSP_LCD_GetYSize());
+    irSense IR(A3); // initialize IR sensor, reading from Pin D2
 
     BSP_LCD_Init();
     BSP_LCD_LayerDefaultInit(LTDC_ACTIVE_LAYER, LCD_FB_START_ADDRESS);
@@ -76,7 +71,7 @@ int main(){
 
 
     while(1) {
-        US.checkDistance();
+        sensorUpdate(IR.getDistance());
         wait_us(1000 * 50);
         if (fakeAngle < 360){ //placeholder stuff
             fakeAngle++;
