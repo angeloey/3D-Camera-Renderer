@@ -3,11 +3,24 @@
 #include "stm32746g_discovery_ts.h"
 #include "ultrasonic.h"
 #include "math.h"
+#include <cstdint>
+
+int valmap();
+void drawObject();
+void sensorUpdate();
+void touchCallback();
+
+InterruptIn blueButton();
 
 const double pi = 3.14159;
 uint16_t lastX;
 uint16_t lastY;
 int fakeAngle = 0; //placeholder
+uint16_t targetX;
+uint16_t targetY;
+uint16_t lastTargetX;
+uint16_t lastTargetY;
+
 
 int valmap (float value, float istart, float istop, float ostart, float ostop){          // map one range of values to another
     uint16_t mappedVal = ostart + (ostop - ostart) * ((value - istart) / (istop - istart));
@@ -25,6 +38,7 @@ void drawObject(int16_t distance, uint16_t angle){ //draw a line from centre, wh
     
     BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
     BSP_LCD_DrawCircle(x + 240, y + 136, 1); // mark the end of the line with a yellow blob
+    BSP_LCD_DrawLine(x + 240, y + 136, lastX + 240, lastY + 136); // connect the dots
 
     lastX = x;
     lastY = y; // store last used x,y values
@@ -32,21 +46,23 @@ void drawObject(int16_t distance, uint16_t angle){ //draw a line from centre, wh
 
 void sensorUpdate(int distance){ // do this when the sensed distance changes
     char text [50];
-    int8_t draw = valmap(distance,0,1000,1,100);
-    if (draw > 100){
+    int8_t draw = valmap(distance,0,10000,1,1000);
+    if (draw > 100 || draw < 1){
         draw = 100;
-    } else if (draw < 0){
-        draw = 1;
     }
     sprintf((char*)text, "Distance: %d", draw);
     BSP_LCD_ClearStringLine(LINE(0));
     BSP_LCD_DisplayStringAt(0, LINE(0), (uint8_t *)&text, LEFT_MODE);
     drawObject(draw, fakeAngle); //placeholder angle till i go get a servo or stepper or something
+
 }
 
 int main(){
     ultrasonic US(A4, A2, 0.1, 1, &sensorUpdate); // HCSR04 Ultrasonic Sensor
     US.startUpdates();
+
+    TS_StateTypeDef TS_State;
+    BSP_TS_Init(BSP_LCD_GetXSize(), BSP_LCD_GetYSize());
 
     BSP_LCD_Init();
     BSP_LCD_LayerDefaultInit(LTDC_ACTIVE_LAYER, LCD_FB_START_ADDRESS);
@@ -61,9 +77,10 @@ int main(){
 
     BSP_LCD_Clear(LCD_COLOR_BLACK);
 
+
     while(1) {
         US.checkDistance();
-        wait_us(1000 * 100);
+        wait_us(1000 * 50);
         if (fakeAngle < 360){ //placeholder stuff
             fakeAngle++;
         } else {
