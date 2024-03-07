@@ -1,25 +1,28 @@
+// Angelo irSense
 #include "irSense.h"
 
 irSense::irSense(PinName sensorOut):voltIn(sensorOut){
     voltage = voltIn.read();
 }
 
+    // Returns AnalogIn voltage on pin sensorOut
 float irSense::readVoltage(void){
     voltage = voltIn.read() * 3.3;
     return voltage;
 }
 
-float distanceMap (float value, float istart, float istop, float ostart, float ostop){          // map distance to corresponding voltage range
+    // Have this here so that this library is not dependant on utils.h
+float distanceMap (float value, float istart, float istop, float ostart, float ostop){  
     float mappedVal = ostart + (ostop - ostart) * ((value - istart) / (istop - istart));
     return mappedVal;
 }
 
+    // Returns distance in CM from IR sensor
 float irSense::getDistance(){
     readVoltage();
-    // crudely approximating from graph included in datasheet
-    if(voltage >= 2.3){ // 3.1 - 2-3 = 5 - 10
-        distance = distanceMap(voltage,2.3,3.2,10,5);  // have to call this loads because relationship is non-linear
-    } else if (voltage < 2.3 && voltage >= 1.3){
+    if(voltage >= 2.3){                                 // crudely approximating from graph included in datasheet
+        distance = distanceMap(voltage,2.3,3.2,10,5);   // have to call this loads because relationship is non-linear
+    } else if (voltage < 2.3 && voltage >= 1.3){        // See DATASHEET
         distance = distanceMap(voltage,1.3,2.3,20,10);
     } else if (voltage < 1.3 && voltage >= 0.9){
         distance = distanceMap(voltage,0.9,1.3,30,20);
