@@ -5,6 +5,7 @@
 
 #include "irSense.h"
 #include "utils.h"
+#include "pot.h"
 
 Utilities utils;
 
@@ -36,7 +37,7 @@ void drawRadarView(float distance, float angle){ //draw a line from centre, wher
     
     BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
     BSP_LCD_DrawCircle(x + radarXoffset, y + radarYoffset, 1); // mark the end of the line with a yellow blob
-    BSP_LCD_DrawLine(x + radarXoffset, y + radarYoffset, lastX + radarXoffset, lastY + radarYoffset); // connect the dots
+    BSP_LCD_DrawLine(x + radarXoffset, y + radarYoffset, lastX + radarXoffset, lastY + radarYoffset); // connect the blobs
 
     lastX = x;
     lastY = y; // store last used x,y values
@@ -51,9 +52,11 @@ void drawDepthMap(float distance, float angle, uint8_t layer){ //draw 2D image w
     BSP_LCD_DrawRect(depthMapXoffset - 1, depthMapYoffset - 91, 91, 91); // draw bounding box for image
 }
 
-void sensorUpdate(float distance, float angle, uint8_t layer){ // shit to do when updating sensor reading
+void sensorUpdate(float distance, float angle, uint8_t layer, float potVal){ // shit to do when updating sensor reading
+    utils.valmap(potVal, 0, 3.3, 0, 100);
+    utils.valmap(distance, 0, 100, 0, potVal); //most of this is for debug and testing
     char text [50];
-    sprintf((char*)text, "Distance: %f Layer: %d", distance, layer);
+    sprintf((char*)text, "Distance: %f Layer: %d PotValue: %f", distance, layer, potVal); //debug readout for now
     BSP_LCD_ClearStringLine(LINE(0));
     BSP_LCD_DisplayStringAt(0, LINE(0), (uint8_t *)&text, LEFT_MODE);
     drawRadarView(distance, angle);
@@ -71,10 +74,11 @@ int main(){
     BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
     BSP_LCD_Clear(LCD_COLOR_BLACK);
 
-    irSense IR(A3); // initialize IR sensor, reading from Pin D2
+    irSense IR(A3); // initialize IR sensor, reading from Pin A3
+    Pot pot(A4); // initialize Potentiometer, reading from Pin A4
 
     while(1) {
-        sensorUpdate(IR.getDistance(),fakeAngle,depthMapLayer);
+        sensorUpdate(IR.getDistance(),fakeAngle,depthMapLayer,pot.readVoltage());
         wait_us(1000 * 10);
         if(direction == 1){
             if (fakeAngle < 315){ //placeholder stuff //TODO: get a servo/stepper and use some real angles
