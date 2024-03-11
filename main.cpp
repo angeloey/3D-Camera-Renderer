@@ -1,3 +1,4 @@
+// Angelo Maoudis 14074479
 #include "mbed.h"
 #include "stm32746g_discovery_lcd.h"
 #include "stm32746g_discovery_ts.h"
@@ -83,8 +84,6 @@ int main(){
     Pot rangePot(A4); // initialize Potentiometer, reading from Pin A4
     Servo servo(PC_7, 60, 2.5); //initialize Servo motor, on pin PC_7 (D0), with a 60degree range at 2.5ms
 
-    float servoValue = 0;
-    servo.writePos(servoValue);
     while(1) {
         servo.writePos(fakeAngle - 255);
         sensorUpdate(IR.getDistance(),fakeAngle,depthMapLayer,rangePot.readVoltage());

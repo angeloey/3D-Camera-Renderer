@@ -1,9 +1,11 @@
+// Angelo Maoudis 14074479
 // Angelo myServo
 #include "myServo.h"
 #include <stdint.h>
 
 Servo::Servo(PinName servoPin, uint16_t servoRange, float servoTime):pwm(servoPin), _servoRange(servoRange), _servoTime(servoTime){
     writePos(0);
+    pwm.period_ms(20);
 }
 
     // Have this here so that this library is not dependant on myUtils.h
