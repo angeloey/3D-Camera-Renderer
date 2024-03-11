@@ -81,15 +81,12 @@ int main(){
 
     irSense IR(A3); // initialize IR sensor, reading from Pin A3
     Pot rangePot(A4); // initialize Potentiometer, reading from Pin A4
-    Servo servo(PC_7); //initialize Servo motor, on pin PC_7 (D0)
+    Servo servo(PC_7, 60, 2.5); //initialize Servo motor, on pin PC_7 (D0), with a 60degree range at 2.5ms
 
     float servoValue = 0;
     servo.writePos(servoValue);
     while(1) {
-        servo.writePos(servoValue);
-        if(servoValue > 2500){
-            servoValue = 0;
-        }
+        servo.writePos(fakeAngle - 255);
         sensorUpdate(IR.getDistance(),fakeAngle,depthMapLayer,rangePot.readVoltage());
         wait_us(1000 * 10);
         if(direction == 1){
