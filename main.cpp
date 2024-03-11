@@ -4,8 +4,11 @@
 #include "math.h"
 
 #include "irSense.h"
-#include "utils.h"
+#include "myUtils.h"
 #include "pot.h"
+#include "myServo.h"
+#include <cstdint>
+
 
 Utilities utils;
 
@@ -43,24 +46,26 @@ void drawRadarView(float distance, float angle){ //draw a line from centre, wher
     lastY = y; // store last used x,y values
 }
 
-void drawDepthMap(float distance, float angle, uint8_t layer){ //draw 2D image with depth data
+void drawDepthMap(float distance, float angle, uint8_t layer, uint8_t range){ //draw 2D image with depth data
     uint16_t drawX = (angle - 225) + depthMapXoffset; //0-90deg from left = x coord 0 to 90 from offset //TODO: "normalise" the image so it isnt skewed
     uint16_t drawY = depthMapYoffset - layer;
-    uint8_t red = utils.valmap(distance,0,100,0xFF,0x00);
+    uint8_t red = utils.valmap(distance,0,range,0xFF,0x00);
     BSP_LCD_DrawPixel(drawX, drawY, utils.argbToHex(0xFF, red, 0x00, 0x00)); //pixel gets redder depending on distance data
     BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
     BSP_LCD_DrawRect(depthMapXoffset - 1, depthMapYoffset - 91, 91, 91); // draw bounding box for image
 }
 
-void sensorUpdate(float distance, float angle, uint8_t layer, float potVal){ // shit to do when updating sensor reading
-    potVal = utils.valmap(potVal, 0, 3.3, 0, 100);
-    distance = utils.valmap(distance, 0, 100, 0, potVal); //most of this is for debug and testing
+void sensorUpdate(float distance, float angle, uint8_t layer, float rangePot){ // shit to do when updating sensor reading
+    uint8_t rangeCutoff = utils.valmap(rangePot, 0, 3.3, 0, 100);
+    if(distance > rangeCutoff){
+        distance = rangeCutoff; // using this to control range with pot, while also scaling red values in function "drawDepthMap"
+    }
     char text [50];
-    sprintf((char*)text, "Distance: %f Layer: %d PotValue: %f", distance, layer, potVal); //debug readout for now
+    sprintf((char*)text, "Distance: %f Layer: %d MaxRange: %d", distance, layer, rangeCutoff); //debug readout for now
     BSP_LCD_ClearStringLine(LINE(0));
     BSP_LCD_DisplayStringAt(0, LINE(0), (uint8_t *)&text, LEFT_MODE);
     drawRadarView(distance, angle);
-    drawDepthMap(distance, angle, layer);
+    drawDepthMap(distance, angle, layer, rangeCutoff);
 }
 
 int main(){
@@ -75,10 +80,17 @@ int main(){
     BSP_LCD_Clear(LCD_COLOR_BLACK);
 
     irSense IR(A3); // initialize IR sensor, reading from Pin A3
-    Pot pot(A4); // initialize Potentiometer, reading from Pin A4
+    Pot rangePot(A4); // initialize Potentiometer, reading from Pin A4
+    Servo servo(PC_7); //initialize Servo motor, on pin PC_7 (D0)
 
+    float servoValue = 0;
+    servo.writePos(servoValue);
     while(1) {
-        sensorUpdate(IR.getDistance(),fakeAngle,depthMapLayer,pot.readVoltage());
+        servo.writePos(servoValue);
+        if(servoValue > 2500){
+            servoValue = 0;
+        }
+        sensorUpdate(IR.getDistance(),fakeAngle,depthMapLayer,rangePot.readVoltage());
         wait_us(1000 * 10);
         if(direction == 1){
             if (fakeAngle < 315){ //placeholder stuff //TODO: get a servo/stepper and use some real angles

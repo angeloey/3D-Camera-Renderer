@@ -11,7 +11,7 @@ float irSense::readVoltage(void){
     return voltage;
 }
 
-    // Have this here so that this library is not dependant on utils.h
+    // Have this here so that this library is not dependant on myUtils.h
 float distanceMap (float value, float istart, float istop, float ostart, float ostop){  
     float mappedVal = ostart + (ostop - ostart) * ((value - istart) / (istop - istart));
     return mappedVal;
