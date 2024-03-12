@@ -3,7 +3,7 @@
 #include "myServo.h"
 #include <stdint.h>
 
-Servo::Servo(PinName servoPin, uint16_t servoRange, float servoTime):pwm(servoPin), _servoRange(servoRange), _servoTime(servoTime){
+Servo::Servo(PinName servoPin, uint16_t servoRange, float servoTimeStart, float servoTimeEnd):pwm(servoPin), _servoRange(servoRange), _servoTimeStart(servoTimeStart), _servoTimeEnd(servoTimeEnd){
     writePos(0);
     pwm.period_ms(20);
 }
@@ -22,7 +22,7 @@ float Servo::readPos() {
     // Sets new servo motor position
 void Servo::writePos(float newPos) {
     positionDegrees = newPos;
-    position = servoMap(newPos, 0, _servoRange, 0, (_servoTime * 1000));    // map 0 -> _servoRange degrees to, 0 -> _servoTime uSeconds
+    position = servoMap(newPos, 0, _servoRange, (_servoTimeStart * 1000), (_servoTimeEnd * 1000));    // map 0 -> _servoRange degrees to, 0 -> _servoTime uSeconds
     pwm.pulsewidth_us(position);
 }
 

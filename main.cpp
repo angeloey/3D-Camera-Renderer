@@ -8,6 +8,7 @@
 #include "myUtils.h"
 #include "pot.h"
 #include "myServo.h"
+#include "myStepper.h"
 #include <cstdint>
 
 
@@ -82,15 +83,17 @@ int main(){
 
     irSense IR(A3); // initialize IR sensor, reading from Pin A3
     Pot rangePot(A4); // initialize Potentiometer, reading from Pin A4
-    Servo servo(PC_7, 60, 2.5); //initialize Servo motor, on pin PC_7 (D0), with a 60degree range at 2.5ms
+    Servo servo(PC_7, 45, 2, 1.5); //initialize Servo motor, on pin PC_7 (D0), with a 90 degree range between 1.5 and 2ms.
+    Stepper stepper(D1, D2, D3, D4, 1.8);
 
     while(1) {
-        servo.writePos(fakeAngle - 255);
+        servo.writePos(depthMapLayer);
         sensorUpdate(IR.getDistance(),fakeAngle,depthMapLayer,rangePot.readVoltage());
         wait_us(1000 * 10);
         if(direction == 1){
             if (fakeAngle < 315){ //placeholder stuff //TODO: get a servo/stepper and use some real angles
                 fakeAngle++;
+                stepper.step(1, 1);
             } else {
                 direction = 0;
                 lastX = 0;
@@ -102,6 +105,7 @@ int main(){
         }else{
             if (fakeAngle > 225){ //placeholder stuff
                 fakeAngle--;
+                stepper.step(0, 1);
             } else {
                 lastX = 0;
                 lastY = 0;
@@ -116,3 +120,7 @@ int main(){
         }
     }
 }
+
+
+// TODO:
+// https://github.com/cbm80amiga/ST7735_3d_filled_vector/blob/master/gfx3d.h

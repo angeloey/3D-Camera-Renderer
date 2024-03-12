@@ -7,7 +7,7 @@ public:
 
     // servoRange = servo range of motion in degrees
     // servoTime = servo pulse length required for maximum rotation in ms
-    Servo(PinName servoPin, uint16_t servoRange, float servoTime);
+    Servo(PinName servoPin, uint16_t servoRange, float servoTimeStart, float servoTimeEnd);
 
     // Returns servo motors position in degrees
     float readPos();
@@ -21,7 +21,9 @@ private:
 
     uint16_t _servoRange;
 
-    float _servoTime;
+    float _servoTimeStart;
+
+    float _servoTimeEnd;
 
     float position;
 
