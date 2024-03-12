@@ -2,6 +2,7 @@
 // Angelo myStepper
 #include "DigitalOut.h"
 #include "mbed.h"
+#include <cstdint>
 
 class Stepper {
 public:
@@ -9,12 +10,17 @@ public:
 
     // Steps the servo in the given direction x amount of times
     // Clockwise = 1 > CW    Clockwise = 0 > CCW
-    void step(uint8_t clockwise, uint16_t steps);
+    // stepMode = 3 > full-step    stepMode = 7 > half-step
+    void step(uint8_t clockwise, uint16_t steps, uint8_t stepMode);
 
+    // Jumps to current step in the step table
+    void jumpToStep(uint8_t stepMode);
 
 private:
 
     float _stepSize;
+
+    uint8_t _stepMode;
 
     int8_t currentStep;
 

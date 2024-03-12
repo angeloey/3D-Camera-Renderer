@@ -31,6 +31,7 @@ uint16_t lastY;
 int fakeAngle = 225; //placeholder
 
 
+
 void drawRadarView(float distance, float angle){ //draw a line from centre, where: length = distance sensed, and angle = current angle of the sensor
     BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
     BSP_LCD_DrawLine(radarXoffset, radarYoffset, lastX + radarXoffset, lastY + radarYoffset); // overwrite last drawn line in black
@@ -83,17 +84,18 @@ int main(){
 
     irSense IR(A3); // initialize IR sensor, reading from Pin A3
     Pot rangePot(A4); // initialize Potentiometer, reading from Pin A4
-    Servo servo(PC_7, 45, 2, 1.5); //initialize Servo motor, on pin PC_7 (D0), with a 90 degree range between 1.5 and 2ms.
+    Servo servo(PC_7, 180, 2.5, 1.5); //initialize Servo motor, on pin PC_7 (D0), with a 90 degree range between 1.5 and 2ms.
     Stepper stepper(D1, D2, D3, D4, 1.8);
 
     while(1) {
-        servo.writePos(depthMapLayer);
+        stepper.step(direction, 1, 7);
+        //stepper.step(0, 1, 7);
+        servo.writePos((float)depthMapLayer);
         sensorUpdate(IR.getDistance(),fakeAngle,depthMapLayer,rangePot.readVoltage());
         wait_us(1000 * 10);
         if(direction == 1){
             if (fakeAngle < 315){ //placeholder stuff //TODO: get a servo/stepper and use some real angles
                 fakeAngle++;
-                stepper.step(1, 1);
             } else {
                 direction = 0;
                 lastX = 0;
@@ -105,7 +107,6 @@ int main(){
         }else{
             if (fakeAngle > 225){ //placeholder stuff
                 fakeAngle--;
-                stepper.step(0, 1);
             } else {
                 lastX = 0;
                 lastY = 0;
@@ -121,6 +122,6 @@ int main(){
     }
 }
 
-
+// stepper angle is 3.6 in half step, 7.2 in full step
 // TODO:
 // https://github.com/cbm80amiga/ST7735_3d_filled_vector/blob/master/gfx3d.h
