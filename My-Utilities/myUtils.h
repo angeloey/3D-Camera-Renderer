@@ -14,4 +14,6 @@ public:
     // Returns Hex code corresponding to given Alpha, Red, Green, & Blue Channels
     unsigned long argbToHex(uint8_t alpha, uint8_t red, uint8_t green, uint8_t blue);
     
+    // Returns 0 if input is negative, otherwise returns input
+    float returnPositive(float input);
 };

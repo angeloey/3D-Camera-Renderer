@@ -15,3 +15,12 @@ unsigned long Utilities::argbToHex(uint8_t alpha, uint8_t red, uint8_t green, ui
     return ((alpha & 0xFF) << 24) + ((red & 0xFF) << 16) + ((green & 0xFF) << 8)
            + (blue & 0xFF);
 }
+
+    // Returns 0 if input is negative, otherwise returns input
+float Utilities::returnPositive(float input){
+    if(input > 0){
+        return input;
+    }else{
+        return 0;
+    }
+}
