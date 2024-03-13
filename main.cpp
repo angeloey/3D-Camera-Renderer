@@ -59,8 +59,8 @@ void drawRadarView(float distance, float angle){
     BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
     BSP_LCD_DrawLine(radarXoffset, radarYoffset, lastX + radarXoffset, lastY + radarYoffset); // overwrite last drawn line in black
 
-    uint16_t x = distance * cos(pi * 2 * (angle + 255) / 360); 
-    uint16_t y = distance * sin(pi * 2 * (angle + 255) / 360); /// find x,y coords of a point on a circle of radius 'distance' at angle 'angle'
+    uint16_t x = distance * cos(pi * 2 * (angle + 225) / 360); 
+    uint16_t y = distance * sin(pi * 2 * (angle + 225) / 360); /// find x,y coords of a point on a circle of radius 'distance' at angle 'angle'
     BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
     BSP_LCD_DrawLine(radarXoffset, radarYoffset, x + radarXoffset, y + radarYoffset); // add centre point offset to calculated x & y values & draw a line from centre to x,y
     
