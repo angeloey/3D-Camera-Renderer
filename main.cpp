@@ -11,33 +11,56 @@
 #include "myStepper.h"
 #include <cstdint>
 
+void incrementScan();
+void drawRadarView(float distance, float angle);
+void drawDepthMap(float distance, float angle, uint8_t layer, uint8_t range);
+void sensorUpdate(float distance, float angle, uint8_t layer, float rangePot);
 
 Utilities utils;
 
-void drawRadarView();
-void drawDepthMap();
-void sensorUpdate();
+Ticker nextStep;
+
+irSense IR(A3); // initialize IR sensor, reading from Pin A3
+Pot rangePot(A4); // initialize Potentiometer, reading from Pin A4
+Servo servo(PC_7, 180, 2.5, 1.5); //initialize Servo motor, on pin PC_7 (D0), with a 90 degree range between 1.5 and 2ms.
+Stepper stepper(D1, D2, D3, D4, 7.5); //Initialize Stepper motor, on pins D1, D2, D3, D4, with a step angle of 7.5 (not yet implemented)
+
 
 const double pi = 3.14159;
 uint8_t radarXoffset = 110;
 uint8_t radarYoffset = 222;
-uint8_t direction = 0;
+bool direction = false;             // False = CCW, True = CW
 uint16_t depthMapXoffset = 310;
 uint8_t depthMapYoffset = 222;
 uint8_t depthMapLayer = 0;
 
 uint16_t lastX;
 uint16_t lastY;
-int fakeAngle = 225; //placeholder
+int desiredAngle = 0;
 
+    // Take peripheral reading, then move servo & stepper to next position
+void incrementScan(void){
+    sensorUpdate(IR.getDistance(),desiredAngle,depthMapLayer,rangePot.readVoltage());
+    (direction == true) ? desiredAngle++ : desiredAngle--;
+    if(desiredAngle >= 90 || desiredAngle < 0){
+        direction = !direction;
+        lastX = 0, lastY = 0;
+        depthMapLayer++;
+        BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+        BSP_LCD_FillRect(0, 22, 220, 250);// clear a 220x250 box on left side of screen to clear radar view between layers
+        depthMapLayer = (depthMapLayer >= 90) ? 0 : depthMapLayer; // currently a 90x90 image, subject to change
+    }
+    stepper.step(direction, 1, 7);
+    servo.writePos((float)depthMapLayer);
+}
 
-
-void drawRadarView(float distance, float angle){ //draw a line from centre, where: length = distance sensed, and angle = current angle of the sensor
+    // Draw a line from centre, where: length = distance sensed, and angle = current angle of the sensor
+void drawRadarView(float distance, float angle){ 
     BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
     BSP_LCD_DrawLine(radarXoffset, radarYoffset, lastX + radarXoffset, lastY + radarYoffset); // overwrite last drawn line in black
 
-    uint16_t x = distance * cos(pi * 2 * angle / 360); 
-    uint16_t y = distance * sin(pi * 2 * angle / 360); /// find x,y coords of a point on a circle of radius 'distance' at angle 'angle'
+    uint16_t x = distance * cos(pi * 2 * (angle + 255) / 360); 
+    uint16_t y = distance * sin(pi * 2 * (angle + 255) / 360); /// find x,y coords of a point on a circle of radius 'distance' at angle 'angle'
     BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
     BSP_LCD_DrawLine(radarXoffset, radarYoffset, x + radarXoffset, y + radarYoffset); // add centre point offset to calculated x & y values & draw a line from centre to x,y
     
@@ -49,8 +72,9 @@ void drawRadarView(float distance, float angle){ //draw a line from centre, wher
     lastY = y; // store last used x,y values
 }
 
-void drawDepthMap(float distance, float angle, uint8_t layer, uint8_t range){ //draw 2D image with depth data
-    uint16_t drawX = (angle - 225) + depthMapXoffset; //0-90deg from left = x coord 0 to 90 from offset //TODO: "normalise" the image so it isnt skewed
+    // Draw 2D image with depth data
+void drawDepthMap(float distance, float angle, uint8_t layer, uint8_t range){ 
+    uint16_t drawX = (angle) + depthMapXoffset; //0-90deg from left = x coord 0 to 90 from offset //TODO: "normalise" the image so it isnt skewed
     uint16_t drawY = depthMapYoffset - layer;
     uint8_t red = utils.valmap(distance,0,range,0xFF,0x00);
     BSP_LCD_DrawPixel(drawX, drawY, utils.argbToHex(0xFF, red, 0x00, 0x00)); //pixel gets redder depending on distance data
@@ -58,7 +82,8 @@ void drawDepthMap(float distance, float angle, uint8_t layer, uint8_t range){ //
     BSP_LCD_DrawRect(depthMapXoffset - 1, depthMapYoffset - 91, 91, 91); // draw bounding box for image
 }
 
-void sensorUpdate(float distance, float angle, uint8_t layer, float rangePot){ // shit to do when updating sensor reading
+    // Calls display functions with updated/formatted peripheral data
+void sensorUpdate(float distance, float angle, uint8_t layer, float rangePot){
     uint8_t rangeCutoff = utils.valmap(rangePot, 0, 3.3, 0, 100);
     if(distance > rangeCutoff){
         distance = rangeCutoff; // using this to control range with pot, while also scaling red values in function "drawDepthMap"
@@ -71,7 +96,10 @@ void sensorUpdate(float distance, float angle, uint8_t layer, float rangePot){ /
     drawDepthMap(distance, angle, layer, rangeCutoff);
 }
 
+    // Main
 int main(){
+
+        // Setup LCD, Show startup message, Clear to black
     BSP_LCD_Init();
     BSP_LCD_LayerDefaultInit(LTDC_ACTIVE_LAYER, LCD_FB_START_ADDRESS);
     BSP_LCD_SelectLayer(LTDC_ACTIVE_LAYER);
@@ -82,46 +110,15 @@ int main(){
     BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
     BSP_LCD_Clear(LCD_COLOR_BLACK);
 
-    irSense IR(A3); // initialize IR sensor, reading from Pin A3
-    Pot rangePot(A4); // initialize Potentiometer, reading from Pin A4
-    Servo servo(PC_7, 180, 2.5, 1.5); //initialize Servo motor, on pin PC_7 (D0), with a 90 degree range between 1.5 and 2ms.
-    Stepper stepper(D1, D2, D3, D4, 1.8);
+        // Attatch ticker to increment scan progress every 100ms
+    nextStep.attach(incrementScan, 100ms);
+
 
     while(1) {
-        stepper.step(direction, 1, 7);
-        //stepper.step(0, 1, 7);
-        servo.writePos((float)depthMapLayer);
-        sensorUpdate(IR.getDistance(),fakeAngle,depthMapLayer,rangePot.readVoltage());
-        wait_us(1000 * 10);
-        if(direction == 1){
-            if (fakeAngle < 315){ //placeholder stuff //TODO: get a servo/stepper and use some real angles
-                fakeAngle++;
-            } else {
-                direction = 0;
-                lastX = 0;
-                lastY = 0;
-                depthMapLayer++;
-                BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-                BSP_LCD_FillRect(0, 22, 220, 250);// clear a 220x250 box on left side of screen to clear radar view between layers
-            }
-        }else{
-            if (fakeAngle > 225){ //placeholder stuff
-                fakeAngle--;
-            } else {
-                lastX = 0;
-                lastY = 0;
-                direction = 1;
-                depthMapLayer++;
-                BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-                BSP_LCD_FillRect(0, 22, 220, 250);// clear a 220x250 box on left side of screen to clear radar view between layers
-            }
-        }
-        if (depthMapLayer >= 90){ // currently a 90x90 image, subject to change
-            depthMapLayer = 0;
-        }
+
     }
 }
 
-// stepper angle is 3.6 in half step, 7.2 in full step
+// stepper angle is 3.6 in half step, 7.2 in full step //ish, cant find data online
 // TODO:
 // https://github.com/cbm80amiga/ST7735_3d_filled_vector/blob/master/gfx3d.h
