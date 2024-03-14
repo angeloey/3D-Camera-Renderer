@@ -7,12 +7,16 @@
 class Rotary {
 public:
 
-    Rotary(PinName encoderA, PinName encoderB, PinName button);
+    // using std::function<> template class so i can pass functions to this object
+    Rotary(PinName encoderA, PinName encoderB, PinName button, std::function<void(void)> buttonFunc, std::function<void(void)> turnFunc);
 
-    // Returns counter value
-    uint8_t readCount();
+    // Returns direction most recently turned, CW = true, CCW = false
+    bool getClockwise(void);
 
 private:
+
+    // Solves current encoder reading for last turned direction
+    void solveEncoder(void);
 
     InterruptIn _encoderA;
 
@@ -20,5 +24,5 @@ private:
 
     InterruptIn _button;
 
-    uint8_t counter;
+    bool clockwise;
 };

@@ -9,12 +9,15 @@
 #include "pot.h"
 #include "myServo.h"
 #include "myStepper.h"
+#include "rotaryEncoder.h"
 #include <cstdint>
 
 void incrementScan();
 void drawRadarView(float distance, float angle);
 void drawDepthMap(float distance, float angle, uint8_t layer, uint8_t range);
 void sensorUpdate(float distance, float angle, uint8_t layer, float rangePot);
+void rotaryButtonPressed(void);
+void rotaryTurned(void);
 
 Utilities utils;
 
@@ -24,7 +27,7 @@ irSense IR(A3); // initialize IR sensor, reading from Pin A3
 Pot rangePot(A4); // initialize Potentiometer, reading from Pin A4
 Servo servo(PC_7, 180, 2.5, 1.5); //initialize Servo motor, on pin PC_7 (D0), with a 90 degree range between 1.5 and 2ms.
 Stepper stepper(D1, D2, D3, D4, 7.5); //Initialize Stepper motor, on pins D1, D2, D3, D4, with a step angle of 7.5 (not yet implemented)
-
+Rotary encoder(D5, D6, D7, &rotaryButtonPressed, &rotaryTurned); //Initialize Rotary encoder on D5,D6,D7, and pass functions to object
 
 const double pi = 3.14159;
 uint8_t radarXoffset = 110;
@@ -37,6 +40,14 @@ uint8_t depthMapLayer = 0;
 uint16_t lastX;
 uint16_t lastY;
 int desiredAngle = 0;
+
+void rotaryButtonPressed(void){
+
+}
+
+void rotaryTurned(void){
+
+}
 
     // Take peripheral reading, then move servo & stepper to next position
 void incrementScan(void){
@@ -74,8 +85,8 @@ void drawRadarView(float distance, float angle){
 
     // Draw 2D image with depth data
 void drawDepthMap(float distance, float angle, uint8_t layer, uint8_t range){ 
-    uint16_t drawX = (angle) + depthMapXoffset; //0-90deg from left = x coord 0 to 90 from offset //TODO: "normalise" the image so it isnt skewed
-    uint16_t drawY = depthMapYoffset - layer;
+    uint16_t drawX = (angle) + depthMapXoffset; //0-90deg from left = x coord 0 to 90 from offset //TODO: "normalise" the image so it isnt skewed 
+    uint16_t drawY = depthMapYoffset - layer;                                                     //(Z = cos(angle) * distance??? check maths before implementing)
     uint8_t red = utils.valmap(distance,0,range,0xFF,0x00);
     BSP_LCD_DrawPixel(drawX, drawY, utils.argbToHex(0xFF, red, 0x00, 0x00)); //pixel gets redder depending on distance data
     BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
