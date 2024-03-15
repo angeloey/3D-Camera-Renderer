@@ -21,7 +21,8 @@ void rotaryTurned(void);
 
 Utilities utils;
 
-Ticker nextStep;
+Ticker nextStep;    // used to iterate through object scan
+Ticker updateScreen;    // used to draw on screen for other views
 
 irSense IR(A3); // initialize IR sensor, reading from Pin A3
 Pot rangePot(A4); // initialize Potentiometer, reading from Pin A4
@@ -30,39 +31,112 @@ Stepper stepper(D1, D2, D3, D4, 7.5); //Initialize Stepper motor, on pins D1, D2
 Rotary encoder(D5, D6, D7, &rotaryButtonPressed, &rotaryTurned); //Initialize Rotary encoder on D5,D6,D7, and pass functions to object
 
 const double pi = 3.14159;
-uint8_t radarXoffset = 110;
-uint8_t radarYoffset = 222;
+uint16_t radarXoffset = 110;
+uint16_t radarYoffset = 222;
 bool direction = false;             // False = CCW, True = CW
 uint16_t depthMapXoffset = 310;
-uint8_t depthMapYoffset = 222;
+uint16_t depthMapYoffset = 222;
 uint8_t depthMapLayer = 0;
 
 uint16_t lastX;
 uint16_t lastY;
-int desiredAngle = 0;
 
+int16_t desiredAngle = 0;
+
+bool scanFlag = false;
+
+uint8_t menuCounter = 0;
+
+    // Screen with relevant peripheral data, useful for debugging/testing
+void drawDebugScreen(void){
+    BSP_LCD_SetBackColor(LCD_COLOR_BLACK);
+    BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
+    char text [50];
+
+    sprintf((char*)text, "IR Distance: %.2f    Voltage: %.2f", IR.getDistance(), IR.readVoltage()); 
+    BSP_LCD_ClearStringLine(LINE(2));
+    BSP_LCD_DisplayStringAt(0, LINE(2), (uint8_t *)&text, LEFT_MODE);
+
+    float potVal = rangePot.readVoltage();
+    sprintf((char*)text, "Range-Pot Distance: %d    Voltage: %.2f", utils.valmap(potVal, 0, 3.3, 0, 100), potVal); 
+    BSP_LCD_ClearStringLine(LINE(3));
+    BSP_LCD_DisplayStringAt(0, LINE(3), (uint8_t *)&text, LEFT_MODE);
+
+    sprintf((char*)text, "Encoder Clockwise: %d", encoder.getClockwise()); 
+    BSP_LCD_ClearStringLine(LINE(4));
+    BSP_LCD_DisplayStringAt(0, LINE(4), (uint8_t *)&text, LEFT_MODE);
+
+    sprintf((char*)text, "Servo Position: %.2f", servo.readPos());
+    BSP_LCD_ClearStringLine(LINE(5));
+    BSP_LCD_DisplayStringAt(0, LINE(5), (uint8_t *)&text, LEFT_MODE);
+
+    sprintf((char*)text, "Scan Clockwise: %d    Angle: %d   Layer: %d", direction, desiredAngle, depthMapLayer);
+    BSP_LCD_ClearStringLine(LINE(6));
+    BSP_LCD_DisplayStringAt(0, LINE(6), (uint8_t *)&text, LEFT_MODE);
+
+    sprintf((char*)text, "Radar Offset X: %d   Y: %d", radarXoffset, radarYoffset); 
+    BSP_LCD_ClearStringLine(LINE(7));
+    BSP_LCD_DisplayStringAt(0, LINE(7), (uint8_t *)&text, LEFT_MODE);
+
+    sprintf((char*)text, "DepthMap Offset X: %d   Y: %d", depthMapXoffset, depthMapYoffset); 
+    BSP_LCD_ClearStringLine(LINE(8));
+    BSP_LCD_DisplayStringAt(0, LINE(8), (uint8_t *)&text, LEFT_MODE);
+}
+
+    // Select & Execute menu options when button is pressed
 void rotaryButtonPressed(void){
-
+    updateScreen.detach();
+    //BSP_LCD_Clear(LCD_COLOR_BLACK);
+    switch(menuCounter){
+        case 0:
+            nextStep.attach(incrementScan, 100ms);
+            break;
+        case 1:
+            BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"AAAAAAAAAAAAA", CENTER_MODE);
+            break;
+        case 2:
+            BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"BBBBBBBBBBBBB 3", CENTER_MODE);
+            break;
+        case 3:
+            updateScreen.attach(drawDebugScreen, 20ms); // 50Hz
+            break;
+        default:    // should never happen
+            BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"SCCCCCCCCCCCCCCC", CENTER_MODE);
+            break;
+    }
 }
 
+    // Scroll through menu when encoder is turned
 void rotaryTurned(void){
+    (encoder.getClockwise() == true) ? menuCounter++ : menuCounter--;
+    menuCounter = (menuCounter > 3) ? 0 : menuCounter;  // uint underflows to 255 without exception
 
+    BSP_LCD_ClearStringLine(LINE(1));
+    BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
+    switch(menuCounter){
+        case 0:
+            BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Menu: START SCAN", CENTER_MODE);
+            break;
+        case 1:
+            BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Menu: placeholder 2", CENTER_MODE);
+            break;
+        case 2:
+            BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Menu: menu placeholder 3", CENTER_MODE);
+            break;
+        case 3:
+            BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Menu: DEBUG SCREEN", CENTER_MODE);
+            break;
+        default:    // should never happen
+            BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Something went wrong (rotaryTurned)", CENTER_MODE);
+            break;
+    }
 }
+
+
 
     // Take peripheral reading, then move servo & stepper to next position
 void incrementScan(void){
-    sensorUpdate(IR.getDistance(),desiredAngle,depthMapLayer,rangePot.readVoltage());
-    (direction == true) ? desiredAngle++ : desiredAngle--;
-    if(desiredAngle >= 90 || desiredAngle < 0){
-        direction = !direction;
-        lastX = 0, lastY = 0;
-        depthMapLayer++;
-        BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-        BSP_LCD_FillRect(0, 22, 220, 250);// clear a 220x250 box on left side of screen to clear radar view between layers
-        depthMapLayer = (depthMapLayer >= 90) ? 0 : depthMapLayer; // currently a 90x90 image, subject to change
-    }
-    stepper.step(direction, 1, 7);
-    servo.writePos((float)depthMapLayer);
+    scanFlag = true;
 }
 
     // Draw a line from centre, where: length = distance sensed, and angle = current angle of the sensor
@@ -122,11 +196,29 @@ int main(){
     BSP_LCD_Clear(LCD_COLOR_BLACK);
 
         // Attatch ticker to increment scan progress every 100ms
-    nextStep.attach(incrementScan, 100ms);
+    nextStep.attach(incrementScan, 20ms);
 
 
     while(1) {
+        if(scanFlag == 1){
+            sensorUpdate(IR.getDistance(), desiredAngle, depthMapLayer, rangePot.readVoltage());
+            (direction == true) ? desiredAngle++ : desiredAngle--;
+            if(desiredAngle >= 90 || desiredAngle < 0){
+                direction = !direction;
+                lastX = 0, lastY = 0;
+                depthMapLayer++;
+                BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+                BSP_LCD_FillRect(0, 22, 220, 250);// clear a 220x250 box on left side of screen to clear radar view between layers
+                if(depthMapLayer >= 90){ // currently a 90x90 image, subject to change
+                    nextStep.detach();
+                    depthMapLayer = 0;
+                }
+            }
+            stepper.step(direction, 1, 7);
+            servo.writePos((float)depthMapLayer);
 
+            scanFlag = false;
+        }
     }
 }
 

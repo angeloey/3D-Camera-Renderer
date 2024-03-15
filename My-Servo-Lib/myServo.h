@@ -27,5 +27,5 @@ private:
 
     float position;
 
-    uint8_t positionDegrees;
+    float positionDegrees;
 };

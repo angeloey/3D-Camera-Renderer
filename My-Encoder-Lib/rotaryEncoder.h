@@ -7,8 +7,8 @@
 class Rotary {
 public:
 
-    // using std::function<> template class so i can pass functions to this object
-    Rotary(PinName encoderA, PinName encoderB, PinName button, std::function<void(void)> buttonFunc, std::function<void(void)> turnFunc);
+    // Mbed requires using Mbed::Callback<> instead of std::function<> 
+    Rotary(PinName encoderA, PinName encoderB, PinName button, Callback<void(void)> buttonFunc, Callback<void(void)> turnFunc);
 
     // Returns direction most recently turned, CW = true, CCW = false
     bool getClockwise(void);
