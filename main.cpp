@@ -11,6 +11,7 @@
 #include "myStepper.h"
 #include "rotaryEncoder.h"
 #include <cstdint>
+#include <cstdio>
 
 void incrementScan();
 void drawRadarView(float distance, float angle);
@@ -86,10 +87,10 @@ void drawDebugScreen(void){
     // Select & Execute menu options when button is pressed
 void rotaryButtonPressed(void){
     updateScreen.detach();
-    //BSP_LCD_Clear(LCD_COLOR_BLACK);
+    BSP_LCD_Clear(LCD_COLOR_BLACK);
     switch(menuCounter){
         case 0:
-            nextStep.attach(incrementScan, 100ms);
+            nextStep.attach(incrementScan, 20ms); // 50Hz
             break;
         case 1:
             BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"AAAAAAAAAAAAA", CENTER_MODE);
@@ -109,10 +110,13 @@ void rotaryButtonPressed(void){
     // Scroll through menu when encoder is turned
 void rotaryTurned(void){
     (encoder.getClockwise() == true) ? menuCounter++ : menuCounter--;
-    menuCounter = (menuCounter > 3) ? 0 : menuCounter;  // uint underflows to 255 without exception
+    if(menuCounter > 3){
+        menuCounter = 0;  // uint underflows to 255 without exception
+    }
 
     BSP_LCD_ClearStringLine(LINE(1));
     BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
+
     switch(menuCounter){
         case 0:
             BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Menu: START SCAN", CENTER_MODE);
