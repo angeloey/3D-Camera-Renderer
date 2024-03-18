@@ -7,7 +7,7 @@
 Object3d::Object3d(int16_t xArray[8100], int16_t yArray[8100], int16_t zArray[8100], int16_t focalLength):_xArray(xArray), _yArray(yArray), _zArray(zArray),_focalLength(focalLength){
 }
 
-    // omit selected axis and multiply coordinates by 2D rotation matrix
+    // Omit selected axis and multiply coordinates by 2D rotation matrix
 void Object3d::rotateProjection(float angle, uint8_t axis){
     angle = angle*(pi/180);
     for(uint16_t i = 0; i < 8100; i++){

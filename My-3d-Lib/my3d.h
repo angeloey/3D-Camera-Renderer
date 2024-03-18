@@ -15,8 +15,8 @@ public:
         // Generate Projected Coordinates
     void generateProjected(void);
 
-        // Generate projected coordinates after rotating around an axis
-    void rotateProjection(float angle, uint8_t axis); // 0 = X, 1 = Y, 2 = Z axis
+        // Modify original coordinates, rotating around an axis
+    void rotateProjection(float angle, uint8_t axis); // 0 = X axis, 1 = Y axis, 2 = Z axis
 
     int16_t xProjected[8100]; // Array Containing xProjected Coordinates
     int16_t yProjected[8100]; // Array Containing yProjected Coordinates

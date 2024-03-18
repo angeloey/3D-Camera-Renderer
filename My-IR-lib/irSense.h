@@ -11,6 +11,9 @@ public:
 
     // Returns distance in CM from IR sensor
     float getDistance();
+
+    // Returns last distance measured
+    float lastDistance();
     
 private:
     float distance;

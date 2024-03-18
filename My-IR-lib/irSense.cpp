@@ -12,6 +12,11 @@ float irSense::readVoltage(void){
     return voltage;
 }
 
+    // Returns last distance measured
+float irSense::lastDistance(void){
+    return distance;
+}
+
     // Have this here so that this library is not dependant on myUtils.h
 float distanceMap (float value, float istart, float istop, float ostart, float ostop){  
     float mappedVal = ostart + (ostop - ostart) * ((value - istart) / (istop - istart));

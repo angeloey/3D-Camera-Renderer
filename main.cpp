@@ -12,12 +12,13 @@
 #include "rotaryEncoder.h"
 #include "my3d.h"
 
-void incrementScan();
+void incrementScan(void);
 void drawRadarView(float distance, float angle);
 void drawDepthMap(float distance, float angle, uint8_t layer, uint8_t range);
 void sensorUpdate(float distance, float angle, uint8_t layer, float rangePot);
 void rotaryButtonPressed(void);
 void rotaryTurned(void);
+void draw3dObject(void);
 
 Utilities utils;
 
@@ -30,11 +31,15 @@ Servo servo(PC_7, 180, 2.5, 1.5); //initialize Servo motor, on pin PC_7 (D0), wi
 Stepper stepper(D1, D2, D3, D4, 7.5); //Initialize Stepper motor, on pins D1, D2, D3, D4, with a step angle of 7.5 (not yet implemented)
 Rotary encoder(D5, D6, D7, &rotaryButtonPressed, &rotaryTurned); //Initialize Rotary encoder on D5,D6,D7, and pass functions to object
 
-int16_t xArray[8100];
-int16_t yArray[8100];
-int16_t zArray[8100];
+uint16_t pixelIndex = 0;
+int16_t xArray[8100]; // x Coordinate array
+int16_t yArray[8100]; // y Coordinate array
+int16_t zArray[8100]; // z Coordinate array
+uint8_t xOffset3d = 250;
+uint8_t yOffset3d = 100;
 
 Object3d testObject(xArray, yArray, zArray, 120); // Initialize test 3d object
+
 
 const double pi = 3.14159;
 uint16_t radarXoffset = 110;
@@ -43,6 +48,7 @@ bool direction = false;             // False = CCW, True = CW
 uint16_t depthMapXoffset = 310;
 uint16_t depthMapYoffset = 222;
 uint8_t depthMapLayer = 0;
+uint8_t rangeCutoff = 100;
 
 uint16_t lastX;
 uint16_t lastY;
@@ -50,6 +56,7 @@ uint16_t lastY;
 int16_t desiredAngle = 0;
 
 bool scanFlag = false;
+bool draw3dFlag = false;
 
 uint8_t menuCounter = 0;
 
@@ -95,10 +102,10 @@ void rotaryButtonPressed(void){
     BSP_LCD_Clear(LCD_COLOR_BLACK);
     switch(menuCounter){
         case 0:
-            //nextStep.attach(incrementScan, 20ms); // 50Hz
+            nextStep.attach(incrementScan, 20ms); // 50Hz
             break;
         case 1:
-            BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"AAAAAAAAAAAAA", CENTER_MODE);
+            updateScreen.attach(draw3dObject, 20ms);
             break;
         case 2:
             BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"BBBBBBBBBBBBB 3", CENTER_MODE);
@@ -178,7 +185,7 @@ void drawDepthMap(float distance, float angle, uint8_t layer, uint8_t range){
 
     // Calls display functions with updated/formatted peripheral data
 void sensorUpdate(float distance, float angle, uint8_t layer, float rangePot){
-    uint8_t rangeCutoff = utils.valmap(rangePot, 0, 3.3, 0, 100);
+    rangeCutoff = utils.valmap(rangePot, 0, 3.3, 0, 100);
     if(distance > rangeCutoff){
         distance = rangeCutoff; // using this to control range with pot, while also scaling red values in function "drawDepthMap"
     }
@@ -190,17 +197,8 @@ void sensorUpdate(float distance, float angle, uint8_t layer, float rangePot){
     drawDepthMap(distance, angle, layer, rangeCutoff);
 }
 
-void draw3dObject(uint16_t xOffset, uint16_t yOffset){
-
-    BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
-
-    for(int i = 0; i < 10; i++){
-        for(int j = 1; j < 9; j++){
-            if(testObject.xProjected[i] != xOffset && testObject.xProjected[i+j] !=xOffset){
-                BSP_LCD_DrawLine(testObject.xProjected[i] +xOffset, testObject.yProjected[i] +yOffset, testObject.xProjected[i+j] +xOffset, testObject.yProjected[i+j] +yOffset);
-            }
-        }
-    }
+void draw3dObject(void){
+    draw3dFlag = true;
 }
 
     // Main
@@ -218,51 +216,80 @@ int main(){
     BSP_LCD_Clear(LCD_COLOR_BLACK);
 
         // Attatch ticker to increment scan progress every 100ms
-    //nextStep.attach(incrementScan, 20ms); //turned off for testing//////////////////////
+    //nextStep.attach(incrementScan, 20ms);
 
         // Creating 8 corners of a cube for testing 3d rendering
-    xArray[0] = -40; yArray[0] = -40; zArray[0] = 40; // front bottom left
-    xArray[1] = 40; yArray[1] = -40; zArray[1] = 40; // front bottom right
-    xArray[2] = 40; yArray[2] = 40; zArray[2] = 40; // front top right
-    xArray[3] = -40; yArray[3] = 40; zArray[3] = 40; // front top left
+    // xArray[0] = -40; yArray[0] = -40; zArray[0] = 40; // front bottom left
+    // xArray[1] = 40; yArray[1] = -40; zArray[1] = 40; // front bottom right
+    // xArray[2] = 40; yArray[2] = 40; zArray[2] = 40; // front top right
+    // xArray[3] = -40; yArray[3] = 40; zArray[3] = 40; // front top left
 
-    xArray[4] = -40; yArray[4] = -40; zArray[4] = -40; // back bottom left
-    xArray[5] = 40; yArray[5] = -40; zArray[5] = -40; // back bottom right
-    xArray[6] = 40; yArray[6] = 40; zArray[6] = -40; // back top right
-    xArray[7] = -40; yArray[7] = 40; zArray[7] = -40; // back top left
-
-    testObject.generateProjected();
-    draw3dObject(100, 100);
-
-    wait_us(1000 * 2000); // 2 seconds
-
+    // xArray[4] = -40; yArray[4] = -40; zArray[4] = -40; // back bottom left
+    // xArray[5] = 40; yArray[5] = -40; zArray[5] = -40; // back bottom right
+    // xArray[6] = 40; yArray[6] = 40; zArray[6] = -40; // back top right
+    // xArray[7] = -40; yArray[7] = 40; zArray[7] = -40; // back top left
 
     while(1) {
-
-        testObject.rotateProjection(1, 1);
-        testObject.generateProjected();
-        draw3dObject(100, 100);
-        wait_us(1000 * 20); // 50Hz
-        BSP_LCD_Clear(LCD_COLOR_BLACK);
-
-        if(scanFlag == 1){
+            // Scanning Routine: A lot of this causes mutex, using flags to execute outside of ISR
+        if(scanFlag == true){
             sensorUpdate(IR.getDistance(), desiredAngle, depthMapLayer, rangePot.readVoltage());
             (direction == true) ? desiredAngle++ : desiredAngle--;
             if(desiredAngle >= 90 || desiredAngle < 0){
                 direction = !direction;
                 lastX = 0, lastY = 0;
                 depthMapLayer++;
+                depthMapLayer++;
+                depthMapLayer++;
+                depthMapLayer++;
+                depthMapLayer++;
                 BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-                BSP_LCD_FillRect(0, 22, 220, 250);// clear a 220x250 box on left side of screen to clear radar view between layers
-                if(depthMapLayer >= 90){ // currently a 90x90 image, subject to change
+                BSP_LCD_FillRect(0, 22, 300, 250);// clear a 220x250 box on left side of screen to clear radar view between layers
+                if(depthMapLayer > 90){ // currently a 90x90 image, subject to change
                     nextStep.detach();
                     depthMapLayer = 0;
+                    pixelIndex = 0;
                 }
             }
+            if(desiredAngle %4 == 0){
             stepper.step(direction, 1, 7);
+            }
+            //microstep.step(direction, 1, 0.002);
             servo.writePos((float)depthMapLayer);
 
+                // Store Y Coordinate
+            yArray[pixelIndex] = -45 + depthMapLayer;
+            
+                // Store X Coordinate
+            xArray[pixelIndex] = -45 + desiredAngle;
+
+                // Store Z Coordinate
+            zArray[pixelIndex] = -(int16_t)(rangeCutoff / 2) + (int16_t)round(IR.lastDistance());
+            
+            if(IR.lastDistance() >= rangeCutoff){
+                zArray[pixelIndex] = (int16_t)(rangeCutoff / 2);
+                xArray[pixelIndex] = 0;
+            }
+
+            pixelIndex++;
+
+            draw3dFlag = true;
             scanFlag = false;
+        }
+
+            // Draw object in 3d
+        if(draw3dFlag == true){
+            //BSP_LCD_Clear(LCD_COLOR_BLACK);
+            //testObject.rotateProjection(1, 1);
+            testObject.generateProjected();
+
+            BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
+            for(int i = 0; i < 8099; i++){
+                if(testObject.xProjected[i] != 0 && testObject.xProjected[i+1] != 0){
+                    BSP_LCD_DrawLine(testObject.xProjected[i] +xOffset3d, testObject.yProjected[i] +yOffset3d, testObject.xProjected[i+1] +xOffset3d, testObject.yProjected[i+1] +yOffset3d);
+                }
+            }
+
+            draw3dFlag = false;
         }
     }
 }
