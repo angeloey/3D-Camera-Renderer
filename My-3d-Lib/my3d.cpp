@@ -13,16 +13,16 @@ void Object3d::rotateProjection(float angle, uint8_t axis){
     for(uint16_t i = 0; i < 8100; i++){
         switch(axis){
             case 0: // X Axis selected
-                _yArray[i] = _yArray[i]*cos(angle) - _zArray[i]*sin(angle);
-                _zArray[i] = _yArray[i]*sin(angle) + _zArray[i]*cos(angle);
+                _yArray[i] = round((float)_yArray[i]*cos(angle) - (float)_zArray[i]*sin(angle));
+                _zArray[i] = round((float)_yArray[i]*sin(angle) + (float)_zArray[i]*cos(angle));
                 break;
             case 1: // Y Axis selected
-                _xArray[i] = _xArray[i]*cos(angle) + _zArray[i]*sin(angle);
-                _zArray[i] = _zArray[i]*cos(angle) - _xArray[i]*sin(angle);
+                _xArray[i] = round((float)_xArray[i]*cos(angle) + (float)_zArray[i]*sin(angle));
+                _zArray[i] = round((float)_zArray[i]*cos(angle) - (float)_xArray[i]*sin(angle));
                 break;
             case 2: // Z Axis rotation
-                _xArray[i] = _xArray[i]*cos(angle) - _yArray[i]*sin(angle);
-                _yArray[i] = _xArray[i]*sin(angle) + _yArray[i]*cos(angle);
+                _xArray[i] = round((float)_xArray[i]*cos(angle) - (float)_yArray[i]*sin(angle));
+                _yArray[i] = round((float)_xArray[i]*sin(angle) + (float)_yArray[i]*cos(angle));
                 break;
             default:
                 // this shouldn't happen
