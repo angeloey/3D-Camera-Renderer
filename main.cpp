@@ -10,8 +10,7 @@
 #include "myServo.h"
 #include "myStepper.h"
 #include "rotaryEncoder.h"
-#include <cstdint>
-#include <cstdio>
+#include "my3d.h"
 
 void incrementScan();
 void drawRadarView(float distance, float angle);
@@ -30,6 +29,12 @@ Pot rangePot(A4); // initialize Potentiometer, reading from Pin A4
 Servo servo(PC_7, 180, 2.5, 1.5); //initialize Servo motor, on pin PC_7 (D0), with a 90 degree range between 1.5 and 2ms.
 Stepper stepper(D1, D2, D3, D4, 7.5); //Initialize Stepper motor, on pins D1, D2, D3, D4, with a step angle of 7.5 (not yet implemented)
 Rotary encoder(D5, D6, D7, &rotaryButtonPressed, &rotaryTurned); //Initialize Rotary encoder on D5,D6,D7, and pass functions to object
+
+int16_t xArray[8100];
+int16_t yArray[8100];
+int16_t zArray[8100];
+
+Object3d testObject(xArray, yArray, zArray, 100); // Initialize test 3d object
 
 const double pi = 3.14159;
 uint16_t radarXoffset = 110;
@@ -90,7 +95,7 @@ void rotaryButtonPressed(void){
     BSP_LCD_Clear(LCD_COLOR_BLACK);
     switch(menuCounter){
         case 0:
-            nextStep.attach(incrementScan, 20ms); // 50Hz
+            //nextStep.attach(incrementScan, 20ms); // 50Hz
             break;
         case 1:
             BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"AAAAAAAAAAAAA", CENTER_MODE);
@@ -99,7 +104,7 @@ void rotaryButtonPressed(void){
             BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"BBBBBBBBBBBBB 3", CENTER_MODE);
             break;
         case 3:
-            updateScreen.attach(drawDebugScreen, 20ms); // 50Hz
+            //updateScreen.attach(drawDebugScreen, 20ms); // 50Hz
             break;
         default:    // should never happen
             BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"SCCCCCCCCCCCCCCC", CENTER_MODE);
@@ -185,6 +190,28 @@ void sensorUpdate(float distance, float angle, uint8_t layer, float rangePot){
     drawDepthMap(distance, angle, layer, rangeCutoff);
 }
 
+void draw3dObject(uint16_t xOffset, uint16_t yOffset){
+
+    BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
+
+    for(int i = 0; i < 8090; i++){
+        if(xArray[i] + xOffset > 0){
+            if(xArray[i+1] + xOffset > 0){
+                BSP_LCD_DrawLine(testObject.xProjected[i] +xOffset, testObject.yProjected[i] +yOffset, testObject.xProjected[i+1] +xOffset, testObject.yProjected[i+1] +yOffset);
+            }
+            if(xArray[i+2] > 0){
+                BSP_LCD_DrawLine(testObject.xProjected[i] +xOffset, testObject.yProjected[i] +yOffset, testObject.xProjected[i+2] +xOffset, testObject.yProjected[i+2] +yOffset);
+            }
+            if(xArray[i+3] > 0){
+                BSP_LCD_DrawLine(testObject.xProjected[i] +xOffset, testObject.yProjected[i] +yOffset, testObject.xProjected[i+3] +xOffset, testObject.yProjected[i+3] +yOffset);
+            }
+            if(xArray[i+4] > 0){
+                BSP_LCD_DrawLine(testObject.xProjected[i] +xOffset, testObject.yProjected[i] +yOffset, testObject.xProjected[i+4] +xOffset, testObject.yProjected[i+4] +yOffset);
+            }
+        }
+    }
+}
+
     // Main
 int main(){
 
@@ -200,10 +227,33 @@ int main(){
     BSP_LCD_Clear(LCD_COLOR_BLACK);
 
         // Attatch ticker to increment scan progress every 100ms
-    nextStep.attach(incrementScan, 20ms);
+    //nextStep.attach(incrementScan, 20ms); //turned off for testing//////////////////////
+
+        // Creating 8 corners of a cube for testing 3d rendering
+    xArray[0] = -40; yArray[0] = -40; zArray[0] = 40; // front bottom left
+    xArray[1] = 40; yArray[1] = -40; zArray[1] = 40; // front bottom right
+    xArray[2] = 40; yArray[2] = 40; zArray[2] = 40; // front top right
+    xArray[3] = -40; yArray[3] = 40; zArray[3] = 40; // front top left
+
+    xArray[4] = -40; yArray[4] = -40; zArray[4] = -40; // back bottom left
+    xArray[5] = 40; yArray[5] = -40; zArray[5] = -40; // back bottom right
+    xArray[6] = 40; yArray[6] = 40; zArray[6] = -40; // back top right
+    xArray[7] = -40; yArray[7] = 40; zArray[7] = -40; // back top left
+
+    testObject.generateProjected();
+    draw3dObject(100, 100);
+
+    wait_us(1000 * 2000); // 2 seconds
 
 
     while(1) {
+
+        testObject.rotateProjection(1, 1);
+        testObject.generateProjected();
+        draw3dObject(100, 100);
+        wait_us(1000 * 20); // 50Hz
+        BSP_LCD_Clear(LCD_COLOR_BLACK);
+
         if(scanFlag == 1){
             sensorUpdate(IR.getDistance(), desiredAngle, depthMapLayer, rangePot.readVoltage());
             (direction == true) ? desiredAngle++ : desiredAngle--;
