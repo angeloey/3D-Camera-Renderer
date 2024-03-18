@@ -34,7 +34,7 @@ int16_t xArray[8100];
 int16_t yArray[8100];
 int16_t zArray[8100];
 
-Object3d testObject(xArray, yArray, zArray, 100); // Initialize test 3d object
+Object3d testObject(xArray, yArray, zArray, 120); // Initialize test 3d object
 
 const double pi = 3.14159;
 uint16_t radarXoffset = 110;
@@ -194,19 +194,10 @@ void draw3dObject(uint16_t xOffset, uint16_t yOffset){
 
     BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
 
-    for(int i = 0; i < 8090; i++){
-        if(xArray[i] + xOffset > 0){
-            if(xArray[i+1] + xOffset > 0){
-                BSP_LCD_DrawLine(testObject.xProjected[i] +xOffset, testObject.yProjected[i] +yOffset, testObject.xProjected[i+1] +xOffset, testObject.yProjected[i+1] +yOffset);
-            }
-            if(xArray[i+2] > 0){
-                BSP_LCD_DrawLine(testObject.xProjected[i] +xOffset, testObject.yProjected[i] +yOffset, testObject.xProjected[i+2] +xOffset, testObject.yProjected[i+2] +yOffset);
-            }
-            if(xArray[i+3] > 0){
-                BSP_LCD_DrawLine(testObject.xProjected[i] +xOffset, testObject.yProjected[i] +yOffset, testObject.xProjected[i+3] +xOffset, testObject.yProjected[i+3] +yOffset);
-            }
-            if(xArray[i+4] > 0){
-                BSP_LCD_DrawLine(testObject.xProjected[i] +xOffset, testObject.yProjected[i] +yOffset, testObject.xProjected[i+4] +xOffset, testObject.yProjected[i+4] +yOffset);
+    for(int i = 0; i < 10; i++){
+        for(int j = 1; j < 9; j++){
+            if(testObject.xProjected[i] != xOffset && testObject.xProjected[i+j] !=xOffset){
+                BSP_LCD_DrawLine(testObject.xProjected[i] +xOffset, testObject.yProjected[i] +yOffset, testObject.xProjected[i+j] +xOffset, testObject.yProjected[i+j] +yOffset);
             }
         }
     }
