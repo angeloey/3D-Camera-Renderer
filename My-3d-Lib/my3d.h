@@ -10,7 +10,7 @@
 class Object3d {
 public:
         // Initialize a 3d object with arrays containing x y and z coordinates, 90x90 scan
-    Object3d(int16_t xArray[8100], int16_t yArray[8100], int16_t zArray[8100], int16_t focalLength);
+    Object3d(float xArray[8100], float yArray[8100], float zArray[8100], float focalLength);
 
         // Generate Projected Coordinates
     void generateProjected(void);
@@ -18,22 +18,26 @@ public:
         // Modify original coordinates, rotating around an axis
     void rotateProjection(float angle, uint8_t axis); // 0 = X axis, 1 = Y axis, 2 = Z axis
 
-    int16_t xProjected[8100]; // Array Containing xProjected Coordinates
-    int16_t yProjected[8100]; // Array Containing yProjected Coordinates
+    float xProjected[8100]; // Array Containing xProjected Coordinates
+    float yProjected[8100]; // Array Containing yProjected Coordinates
 
 private:
         // Calculate xProjected based on Z coord
-    int16_t getXProjected(int16_t xCoord, int16_t zCoord); 
+    int16_t getXProjected(float xCoord, float zCoord); 
 
         // Calculate yProjected based on Z coord
-    int16_t getYProjected(int16_t yCoord, int16_t zCoord); 
+    int16_t getYProjected(float yCoord, float zCoord); 
 
-    int16_t* _xArray; // ptr to Array Containing X Coordinates
-    int16_t* _yArray; // ptr to Array Containing Y Coordinates
-    int16_t* _zArray; // ptr to Array Containing Z Coordinates
+    float* _xArray; // ptr to Array Containing X Coordinates
+    float* _yArray; // ptr to Array Containing Y Coordinates
+    float* _zArray; // ptr to Array Containing Z Coordinates
 
-    uint16_t _focalLength; // Focal Length, i.e camera distance *in context of weak perspective projection
+    float _xRotated; // used to temporarily store XYZ coordinates AFTER rotation
+    float _yRotated; // so that modified values are not used in the subsequent operation
+    float _zRotated; // when rotating around an axis (SEE rotateProjection in .cpp)
 
-    const double pi = 3.14159;
+    float _focalLength; // Focal Length, i.e camera distance *in context of weak perspective projection
+
+    const double pi = 3.14159265359;
     
 };

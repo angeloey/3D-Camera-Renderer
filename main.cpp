@@ -32,13 +32,17 @@ Stepper stepper(D1, D2, D3, D4, 7.5); //Initialize Stepper motor, on pins D1, D2
 Rotary encoder(D5, D6, D7, &rotaryButtonPressed, &rotaryTurned); //Initialize Rotary encoder on D5,D6,D7, and pass functions to object
 
 uint16_t pixelIndex = 0;
-int16_t xArray[8100]; // x Coordinate array
-int16_t yArray[8100]; // y Coordinate array
-int16_t zArray[8100]; // z Coordinate array
+float xArray[8100]; // x Coordinate array
+float yArray[8100]; // y Coordinate array
+float zArray[8100]; // z Coordinate array
 uint8_t xOffset3d = 250;
 uint8_t yOffset3d = 100;
 
-Object3d testObject(xArray, yArray, zArray, 120); // Initialize test 3d object
+float xArray1[8100]; // x Coordinate array
+float yArray1[8100]; // y Coordinate array
+float zArray1[8100]; // z Coordinate array
+
+Object3d testObject(xArray, yArray, zArray, -200); // Initialize test 3d object
 
 
 const double pi = 3.14159;
@@ -59,6 +63,9 @@ bool scanFlag = false;
 bool draw3dFlag = false;
 
 uint8_t menuCounter = 0;
+
+int axisCount = 0; // choose axis of rotation TEMPORARY
+int count1 = 5;
 
     // Screen with relevant peripheral data, useful for debugging/testing
 void drawDebugScreen(void){
@@ -102,7 +109,12 @@ void rotaryButtonPressed(void){
     BSP_LCD_Clear(LCD_COLOR_BLACK);
     switch(menuCounter){
         case 0:
-            nextStep.attach(incrementScan, 20ms); // 50Hz
+            if(count1 == 0){
+                count1++;
+                nextStep.attach(incrementScan, 20ms); // 50Hz
+            }else{
+                nextStep.attach(draw3dObject, 20ms); //50Hz
+            }
             break;
         case 1:
             updateScreen.attach(draw3dObject, 20ms);
@@ -196,9 +208,10 @@ void sensorUpdate(float distance, float angle, uint8_t layer, float rangePot){
     drawRadarView(distance, angle);
     drawDepthMap(distance, angle, layer, rangeCutoff);
 }
-
+bool spin = false;
 void draw3dObject(void){
     draw3dFlag = true;
+    spin = true;
 }
 
     // Main
@@ -215,19 +228,30 @@ int main(){
     BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
     BSP_LCD_Clear(LCD_COLOR_BLACK);
 
+
+
         // Attatch ticker to increment scan progress every 100ms
     //nextStep.attach(incrementScan, 20ms);
 
         // Creating 8 corners of a cube for testing 3d rendering
-    // xArray[0] = -40; yArray[0] = -40; zArray[0] = 40; // front bottom left
-    // xArray[1] = 40; yArray[1] = -40; zArray[1] = 40; // front bottom right
-    // xArray[2] = 40; yArray[2] = 40; zArray[2] = 40; // front top right
-    // xArray[3] = -40; yArray[3] = 40; zArray[3] = 40; // front top left
+     xArray[0] = -40; yArray[0] = -40; zArray[0] = 40; // front bottom left
+     xArray[1] = 40; yArray[1] = -40; zArray[1] = 40; // front bottom right
+     xArray[2] = 40; yArray[2] = 40; zArray[2] = 40; // front top right
+     xArray[3] = -40; yArray[3] = 40; zArray[3] = 40; // front top left
 
-    // xArray[4] = -40; yArray[4] = -40; zArray[4] = -40; // back bottom left
-    // xArray[5] = 40; yArray[5] = -40; zArray[5] = -40; // back bottom right
-    // xArray[6] = 40; yArray[6] = 40; zArray[6] = -40; // back top right
-    // xArray[7] = -40; yArray[7] = 40; zArray[7] = -40; // back top left
+     xArray[4] = -40; yArray[4] = -40; zArray[4] = -40; // back bottom left
+     xArray[5] = 40; yArray[5] = -40; zArray[5] = -40; // back bottom right
+     xArray[6] = 40; yArray[6] = 40; zArray[6] = -40; // back top right
+     xArray[7] = -40; yArray[7] = 40; zArray[7] = -40; // back top left
+
+    for(int i = 0; i < 8100; i++){
+        xArray1[i] = xArray[i];
+        yArray1[i] = yArray[i];
+        zArray1[i] = zArray[i];
+    }
+
+
+
 
     while(1) {
             // Scanning Routine: A lot of this causes mutex, using flags to execute outside of ISR
@@ -237,9 +261,6 @@ int main(){
             if(desiredAngle >= 90 || desiredAngle < 0){
                 direction = !direction;
                 lastX = 0, lastY = 0;
-                depthMapLayer++;
-                depthMapLayer++;
-                depthMapLayer++;
                 depthMapLayer++;
                 depthMapLayer++;
                 BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
@@ -267,7 +288,6 @@ int main(){
             
             if(IR.lastDistance() >= rangeCutoff){
                 zArray[pixelIndex] = (int16_t)(rangeCutoff / 2);
-                xArray[pixelIndex] = 0;
             }
 
             pixelIndex++;
@@ -278,16 +298,58 @@ int main(){
 
             // Draw object in 3d
         if(draw3dFlag == true){
-            //BSP_LCD_Clear(LCD_COLOR_BLACK);
-            //testObject.rotateProjection(1, 1);
-            testObject.generateProjected();
+            if(spin == true){
+                //BSP_LCD_Clear(LCD_COLOR_BLACK);
 
-            BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
-            for(int i = 0; i < 8099; i++){
-                if(testObject.xProjected[i] != 0 && testObject.xProjected[i+1] != 0){
-                    BSP_LCD_DrawLine(testObject.xProjected[i] +xOffset3d, testObject.yProjected[i] +yOffset3d, testObject.xProjected[i+1] +xOffset3d, testObject.yProjected[i+1] +yOffset3d);
+                for(int j = 0; j<360; j++){
+                    testObject.rotateProjection(j, axisCount);
+                    testObject.generateProjected();
+                    BSP_LCD_Clear(LCD_COLOR_BLACK);
+                    BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
+                    BSP_LCD_DrawLine(testObject.xProjected[0] + xOffset3d, testObject.yProjected[0] + yOffset3d, testObject.xProjected[1] + xOffset3d, testObject.yProjected[1] + yOffset3d);
+
+                    BSP_LCD_DrawLine(testObject.xProjected[1] + xOffset3d, testObject.yProjected[1] + yOffset3d, testObject.xProjected[2] + xOffset3d, testObject.yProjected[2] + yOffset3d);
+
+                    BSP_LCD_DrawLine(testObject.xProjected[2] + xOffset3d, testObject.yProjected[2] + yOffset3d, testObject.xProjected[3] + xOffset3d, testObject.yProjected[3] + yOffset3d);
+
+                    BSP_LCD_DrawLine(testObject.xProjected[3] + xOffset3d, testObject.yProjected[3] + yOffset3d, testObject.xProjected[0] + xOffset3d, testObject.yProjected[0] + yOffset3d);
+
+                    BSP_LCD_SetTextColor(LCD_COLOR_BLUE);
+                    BSP_LCD_DrawLine(testObject.xProjected[4] + xOffset3d, testObject.yProjected[4] + yOffset3d, testObject.xProjected[5] + xOffset3d, testObject.yProjected[5] + yOffset3d);
+
+                    BSP_LCD_DrawLine(testObject.xProjected[5] + xOffset3d, testObject.yProjected[5] + yOffset3d, testObject.xProjected[6] + xOffset3d, testObject.yProjected[6] + yOffset3d);
+
+                    BSP_LCD_DrawLine(testObject.xProjected[6] + xOffset3d, testObject.yProjected[6] + yOffset3d, testObject.xProjected[7] + xOffset3d, testObject.yProjected[7] + yOffset3d);
+
+                    BSP_LCD_DrawLine(testObject.xProjected[7] + xOffset3d, testObject.yProjected[7] + yOffset3d, testObject.xProjected[4] + xOffset3d, testObject.yProjected[4] + yOffset3d);
+                    
+                    BSP_LCD_SetTextColor(LCD_COLOR_RED);
+                    BSP_LCD_DrawLine(testObject.xProjected[7] + xOffset3d, testObject.yProjected[7] + yOffset3d, testObject.xProjected[3] + xOffset3d, testObject.yProjected[3] + yOffset3d);
+
+                    BSP_LCD_DrawLine(testObject.xProjected[6] + xOffset3d, testObject.yProjected[6] + yOffset3d, testObject.xProjected[2] + xOffset3d, testObject.yProjected[2] + yOffset3d);
+
+                    BSP_LCD_DrawLine(testObject.xProjected[4] + xOffset3d, testObject.yProjected[4] + yOffset3d, testObject.xProjected[0] + xOffset3d, testObject.yProjected[0] + yOffset3d);
+
+                    BSP_LCD_DrawLine(testObject.xProjected[5] + xOffset3d, testObject.yProjected[5] + yOffset3d, testObject.xProjected[1] + xOffset3d, testObject.yProjected[1] + yOffset3d);
+
+                    for(int i = 0; i < 8100; i++){
+                        xArray[i] = xArray1[i];
+                        yArray[i] = yArray1[i];
+                        zArray[i] = zArray1[i];
+                    }
                 }
+                axisCount++;
+                if(axisCount > 2){
+                    axisCount = 0;
+                }
+                //testObject.rotateProjection(1, 1);
             }
+            //testObject.generateProjected();
+            // BSP_LCD_Clear(LCD_COLOR_BLACK);
+            // BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
+            // for(int i = 0; i < 8099; i++){
+            //     BSP_LCD_DrawLine(testObject.xProjected[i] +xOffset3d, testObject.yProjected[i] +yOffset3d, testObject.xProjected[i+1] +xOffset3d, testObject.yProjected[i+1] +yOffset3d);
+            // }
 
             draw3dFlag = false;
         }
