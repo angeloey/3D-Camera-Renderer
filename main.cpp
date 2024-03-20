@@ -56,7 +56,7 @@ bool draw3dFlag = false;  // 3D Render flag
 bool spin = false; // Rotate 3D Render flag
 
     // Menu navigation/control
-uint8_t menuCounter = 0; // used to store last/select a menu option via rotary encoder
+int8_t menuCounter = 0; // used to store last/select a menu option via rotary encoder
 int count1 = 0; // temporary, rotary encoder button, use CTRL-F
 
     // Misc.
@@ -86,44 +86,38 @@ void drawDebugScreen(void){
     BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
     char text [50];
     sprintf((char*)text, "IR Distance: %.2f    Voltage: %.2f", IR.getDistance(), IR.readVoltage()); 
-    BSP_LCD_ClearStringLine(LINE(2));
+    BSP_LCD_ClearStringLine(2);
     BSP_LCD_DisplayStringAt(0, LINE(2), (uint8_t *)&text, LEFT_MODE);
     float potVal = rangePot.readVoltage();
     sprintf((char*)text, "Range-Pot Distance: %d    Voltage: %.2f", utils.valmap(potVal, 0, 3.3, 0, 100), potVal); 
-    BSP_LCD_ClearStringLine(LINE(3));
+    BSP_LCD_ClearStringLine(3);
     BSP_LCD_DisplayStringAt(0, LINE(3), (uint8_t *)&text, LEFT_MODE);
     sprintf((char*)text, "Encoder Clockwise: %d", encoder.getClockwise()); 
-    BSP_LCD_ClearStringLine(LINE(4));
+    BSP_LCD_ClearStringLine(4);
     BSP_LCD_DisplayStringAt(0, LINE(4), (uint8_t *)&text, LEFT_MODE);
     sprintf((char*)text, "Servo Position: %.2f", servo.readPos());
-    BSP_LCD_ClearStringLine(LINE(5));
+    BSP_LCD_ClearStringLine(5);
     BSP_LCD_DisplayStringAt(0, LINE(5), (uint8_t *)&text, LEFT_MODE);
     sprintf((char*)text, "Scan Clockwise: %d    Angle: %d   Layer: %d", direction, desiredAngle, depthMapLayer);
-    BSP_LCD_ClearStringLine(LINE(6));
+    BSP_LCD_ClearStringLine(6);
     BSP_LCD_DisplayStringAt(0, LINE(6), (uint8_t *)&text, LEFT_MODE);
     sprintf((char*)text, "Radar Offset X: %d   Y: %d", radarXoffset, radarYoffset); 
-    BSP_LCD_ClearStringLine(LINE(7));
+    BSP_LCD_ClearStringLine(7);
     BSP_LCD_DisplayStringAt(0, LINE(7), (uint8_t *)&text, LEFT_MODE);
     sprintf((char*)text, "DepthMap Offset X: %d   Y: %d", depthMapXoffset, depthMapYoffset); 
-    BSP_LCD_ClearStringLine(LINE(8));
+    BSP_LCD_ClearStringLine(8);
     BSP_LCD_DisplayStringAt(0, LINE(8), (uint8_t *)&text, LEFT_MODE);
 }
 
     // Select & Execute menu options when button is pressed
 void rotaryButtonPressed(void){
-    updateScreen.detach();
     BSP_LCD_Clear(LCD_COLOR_BLACK);
     switch(menuCounter){
         case 0:
-            if(count1 == 0){
-                count1++;
-                nextStep.attach(incrementScan, 20ms); // 50Hz
-            }else{
-                updateScreen.attach(draw3dObject, 1ms); //limited by speed of calcs anyway
-            }
+            nextStep.attach(incrementScan, 20ms); // 50Hz
             break;
         case 1:
-            //updateScreen.attach(draw3dObject, 1ms);
+            updateScreen.attach(draw3dObject, 1ms); //limited by speed of calcs anyway
             break;
         case 2:
             BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"BBBBBBBBBBBBB 3", CENTER_MODE);
@@ -132,7 +126,7 @@ void rotaryButtonPressed(void){
             //updateScreen.attach(drawDebugScreen, 20ms); // 50Hz
             break;
         default:    // should never happen
-            BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"SCCCCCCCCCCCCCCC", CENTER_MODE);
+            BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Something went wrong (rotaryButtonPressed)", CENTER_MODE);
             break;
     }
 }
@@ -141,22 +135,25 @@ void rotaryButtonPressed(void){
 void rotaryTurned(void){
     (encoder.getClockwise() == true) ? menuCounter++ : menuCounter--;
     if(menuCounter > 3){
-        menuCounter = 0;  // uint underflows to 255 without exception
+        menuCounter = 0; 
+    }else if(menuCounter < 0){
+        menuCounter = 3;
     }
-    BSP_LCD_ClearStringLine(LINE(1));
+    BSP_LCD_ClearStringLine(1);
     BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
     switch(menuCounter){
         case 0:
-            BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Menu: START SCAN", CENTER_MODE);
+            BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
+            BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Menu: Start Scan", CENTER_MODE);
             break;
         case 1:
-            BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Menu: placeholder 2", CENTER_MODE);
+            BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Menu: Rotate Scanned Object", CENTER_MODE);
             break;
         case 2:
-            BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Menu: menu placeholder 3", CENTER_MODE);
+            BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Menu: menu placeholder 33333", CENTER_MODE);
             break;
         case 3:
-            BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Menu: DEBUG SCREEN", CENTER_MODE);
+            BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Menu: Debug Mode", CENTER_MODE);
             break;
         default:    // should never happen
             BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Something went wrong (rotaryTurned)", CENTER_MODE);
@@ -212,6 +209,7 @@ void draw3dObject(void){
     // Take peripheral reading, then move servo & stepper to next position
 void incrementScan(void){
     scanFlag = true;
+    spin = false;
 }
 
     // Rotate a cube around all 3 axis, 3d rendering demo for testing/debugging
@@ -232,7 +230,7 @@ void rotatingCubeDemo(void){
         zArraySAVE[i] = zArray[i];
     }
         // Display the cube at every angle from 0 to 360 along an axis
-    for(int j = 0; j<360; j++){
+    for(int j = 0; j<361; j++){
         testObject.rotateProjection(j, axisCount);
         testObject.generateProjected();
         BSP_LCD_Clear(LCD_COLOR_BLACK);
@@ -311,7 +309,7 @@ int main(){
                         yArraySAVE[i] = yArray[i];
                         zArraySAVE[i] = zArray[i];
                     }
-                    spin = true;
+                    draw3dFlag = true;
                 }
             }
             if(desiredAngle %4 == 0){   // temporary, stepper step size is too big. TODO: use microstepper (need power supply)
@@ -332,7 +330,7 @@ int main(){
             // Draw object in 3d (dont want this in ISR, lots of operations)
         if(draw3dFlag == true){
             if(spin == true){
-                for(int j = 0; j<360; j++){
+                for(int j = 0; j<361; j++){
                     testObject.rotateProjection(j, axisCount);
                     testObject.generateProjected();
                     BSP_LCD_Clear(LCD_COLOR_BLACK);
@@ -348,6 +346,7 @@ int main(){
                 axisCount++; // Cycle axis of rotation every full rotation
                 if(axisCount > 2){
                     axisCount = 0;
+                    updateScreen.detach();
                 }
             }else{
                 testObject.generateProjected();

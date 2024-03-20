@@ -3,6 +3,7 @@
 #include "PinNames.h"
 #include "mbed.h"
 #include <cstdint>
+#include <functional>
 
 class Rotary {
 public:
@@ -15,14 +16,20 @@ public:
 
 private:
 
-    // Solves current encoder reading for last turned direction
+    // Solves current encoder reading for last turned direction 
     void solveEncoder(void);
+
+    std::function<void(void)> func;
 
     InterruptIn _encoderA;
 
     InterruptIn _encoderB;
 
     InterruptIn _button;
+
+    int8_t currentState;
+
+    int8_t lastState;
 
     bool clockwise;
 };
