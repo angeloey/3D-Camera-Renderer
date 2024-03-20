@@ -41,7 +41,7 @@ public:
     void step(uint8_t clockwise, uint16_t steps, float resolution);
 
     // Adjusts AnalogOut values to reflect desired step position
-    void analogStep(int16_t degrees);
+    void analogStep(float degrees);
 
 private:
 

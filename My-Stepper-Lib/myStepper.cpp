@@ -170,7 +170,7 @@ float returnPositive(float input){
 }
 
     // Adjusts AnalogOut values to reflect desired step position
-void microStepper::analogStep(int16_t degrees){                    // Output across phases should look like this \/
+void microStepper::analogStep(float degrees){                    // Output across phases should look like this \/
     _A1.write(returnPositive(sin(degrees * pi / 180)));                             //-''-....-''-......    A1
     _A2.write(returnPositive(cos(degrees * pi / 180)));                             //..-''-....-''-....    A2
     _B1.write(returnPositive(sin(180 + degrees * pi / 180)));                       //....-''-....-''-..    B1
