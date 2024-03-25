@@ -11,6 +11,7 @@
 #include "myStepper.h"
 #include "rotaryEncoder.h"
 #include "my3d.h"
+#include "myButtons.h"
 
     //Function declarations
 void incrementScan(void);
@@ -36,7 +37,7 @@ uint16_t pixelIndex = 0; // current xyzArray index to write/read
 
     // Offsets/Coordinates for drawing on LCD
 uint8_t xOffset3d = 240; // Offsets for drawing 3D object centred on (0,0) which is at the top left of the LCD
-uint8_t yOffset3d = 136;
+uint8_t yOffset3d = 120;
 uint16_t radarXoffset = 110; // Position offsets for drawing radar view
 uint16_t radarYoffset = 222;
 uint16_t depthMapXoffset = 310; // Position offsets for drawing depth map
@@ -54,14 +55,18 @@ uint8_t rangeCutoff = 100; // Any distances sensed past this value, are capped t
 bool scanFlag = false;  // Scan object flag
 bool draw3dFlag = false;  // 3D Render flag
 bool spin = false; // Rotate 3D Render flag
+bool rotateTouchFlag = false; // touch buttons enable flag
 
     // Menu navigation/control
 int8_t menuCounter = 0; // used to store last/select a menu option via rotary encoder
-int count1 = 0; // temporary, rotary encoder button, use CTRL-F
+int16_t xRotateIndex = 0;
+int16_t yRotateIndex = 0; // angle indexes for manual object rotation
+int16_t zRotateIndex = 0;
 
     // Misc.
 int axisCount = 0; // choose axis of rotation TEMPORARY
 const double pi = 3.14159265359;
+
 
     // Initialization, Classes/Objects/Structs/Etc.
 irSense IR(A0); // initialize IR sensor, reading from Pin A0
@@ -72,6 +77,16 @@ Rotary encoder(D5, D6, D7, &rotaryButtonPressed, &rotaryTurned); // initialize R
 Object3d testObject(xArray, yArray, zArray, -200); // initialize test 3d object
 Utilities utils; // initialize myUtils as utils
 //microStepper stepper(A5, A4, A3, A2, 7.5); // Cant use microstepping as the board only has 2 DAC outs :(
+
+    // Touchscreen buttons
+TS_StateTypeDef touchState;
+Button xIncrease(420, 460, 52, 92, LCD_COLOR_RED, LCD_COLOR_YELLOW, 1, touchState);
+Button xDecrease(420, 460, 180, 220, LCD_COLOR_RED, LCD_COLOR_YELLOW, 2, touchState);
+Button yDecrease(140, 180, 225, 265, LCD_COLOR_GREEN, LCD_COLOR_YELLOW, 3, touchState);
+Button yIncrease(300, 340, 225, 265, LCD_COLOR_GREEN, LCD_COLOR_YELLOW, 4, touchState);
+Button zIncrease(20, 60, 52, 92, LCD_COLOR_BLUE, LCD_COLOR_YELLOW, 5, touchState);
+Button zDecrease(20, 60, 180, 220, LCD_COLOR_BLUE, LCD_COLOR_YELLOW, 6, touchState);
+Button resetObject(350, 470, 230, 262, LCD_COLOR_MAGENTA, LCD_COLOR_CYAN, 0, touchState);
 
     // Mbed stuff, Tickers/Interrupts/Etc.
 Ticker nextStep; // used to iterate through object scan
@@ -109,18 +124,42 @@ void drawDebugScreen(void){
     BSP_LCD_DisplayStringAt(0, LINE(8), (uint8_t *)&text, LEFT_MODE);
 }
 
+    // Rotate and draw based on ts input
+void manualRotation(void){
+    rotateTouchFlag = true;
+    spin = false;
+    scanFlag = false;
+    draw3dFlag = false;
+}
+
     // Select & Execute menu options when button is pressed
 void rotaryButtonPressed(void){
+    updateScreen.detach();
+    nextStep.detach();
     BSP_LCD_Clear(LCD_COLOR_BLACK);
     switch(menuCounter){
         case 0:
+                // Attatch ticker to this flag. Increments scan progress
             nextStep.attach(incrementScan, 20ms); // 50Hz
             break;
         case 1:
-            updateScreen.attach(draw3dObject, 1ms); //limited by speed of calcs anyway
+                // Attatch ticker to this flag. Redraws Object
+            updateScreen.attach(draw3dObject, 20ms); // 50Hz
             break;
         case 2:
-            BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"BBBBBBBBBBBBB 3", CENTER_MODE);
+                // Restore 3D object from save
+            for(int i = 0; i < 8; i++){
+                xArray[i] = xArraySAVE[i]; 
+                yArray[i] = yArraySAVE[i];
+                zArray[i] = zArraySAVE[i];
+            }
+                // Draw buttons
+            xIncrease.drawButton(); xDecrease.drawButton();
+            yIncrease.drawButton(); yDecrease.drawButton();
+            zIncrease.drawButton(); zDecrease.drawButton();
+            resetObject.drawButton();
+                // Attatch ticker to this flag. Rotates and draws based on ts input
+            updateScreen.attach(manualRotation, 20ms); // 50Hz
             break;
         case 3:
             //updateScreen.attach(drawDebugScreen, 20ms); // 50Hz
@@ -150,7 +189,7 @@ void rotaryTurned(void){
             BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Menu: Rotate Scanned Object", CENTER_MODE);
             break;
         case 2:
-            BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Menu: menu placeholder 33333", CENTER_MODE);
+            BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Menu: Manual Render Inspection", CENTER_MODE);
             break;
         case 3:
             BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Menu: Debug Mode", CENTER_MODE);
@@ -268,7 +307,7 @@ void rotatingCubeDemo(void){
 
     // Main
 int main(){
-
+    
         // Setup LCD, Show startup message, Clear to black
     BSP_LCD_Init();
     BSP_LCD_LayerDefaultInit(LTDC_ACTIVE_LAYER, LCD_FB_START_ADDRESS);
@@ -280,17 +319,43 @@ int main(){
     BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
     BSP_LCD_Clear(LCD_COLOR_BLACK);
 
+        // Initialize touchscreen
+    BSP_TS_Init(480, 272);
 
-
-        // Attatch ticker to increment scan progress every 100ms
-    //nextStep.attach(incrementScan, 20ms);
-
-    updateScreen.attach(rotatingCubeDemo, 1ms);
+        // Attatch ticker to this flag. Using this demo as a splash screen
+    updateScreen.attach(rotatingCubeDemo, 20ms); // 50Hz
 
     // Do nothing here until a flag is set
     while(1) {
+
+            // Manual control over 3D render
+        if(rotateTouchFlag == true){
+                // Rotate or reset according to buttons pressed
+            if(xIncrease.isPressed()){testObject.rotateProjection(1, 0);}
+            if(xDecrease.isPressed()){testObject.rotateProjection(-1, 0);}
+            if(yIncrease.isPressed()){testObject.rotateProjection(1, 1);}
+            if(yDecrease.isPressed()){testObject.rotateProjection(-1, 1);}
+            if(zIncrease.isPressed()){testObject.rotateProjection(1, 2);}
+            if(zDecrease.isPressed()){testObject.rotateProjection(-1, 2);}
+            if(resetObject.isPressed()){
+                for(int i = 0; i < 8; i++){
+                    xArray[i] = xArraySAVE[i]; 
+                    yArray[i] = yArraySAVE[i];
+                    zArray[i] = zArraySAVE[i];
+                }
+            }
+                // Generate coordinates, Clear screen, Draw image. (only clear immidiately before drawing to reduce strobing)
+            testObject.generateProjected();
+            BSP_LCD_Clear(LCD_COLOR_BLACK);
+            for(int i = 0; i < 8099; i++){
+                BSP_LCD_DrawLine(testObject.xProjected[i] +xOffset3d, testObject.yProjected[i] +yOffset3d, testObject.xProjected[i+1] +xOffset3d,testObject.yProjected[i+1] +yOffset3d);
+            }
+            rotateTouchFlag = false;
+        }
+
             // Scanning Routine, progress one step (causes mutex if in ISR)
         if(scanFlag == true){
+                // Update peripheral data. Clear lcd between layers
             sensorUpdate(IR.getDistance(), desiredAngle, depthMapLayer, rangePot.readVoltage());
             (direction == true) ? desiredAngle++ : desiredAngle--;
             if(desiredAngle >= 90 || desiredAngle < 0){
@@ -299,12 +364,13 @@ int main(){
                 depthMapLayer++;
                 depthMapLayer++;
                 BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-                BSP_LCD_FillRect(0, 22, 300, 250);// clear radar view between layers
-                if(depthMapLayer > 90){ // 90x90 scan complete
+                BSP_LCD_FillRect(0, 22, 300, 250);
+                    // Check for scan completion. Detatch ticker & save xyz arrays
+                if(depthMapLayer > 90){
                     nextStep.detach();
                     depthMapLayer = 0;
                     pixelIndex = 0;
-                    for(int i = 0; i < 8100; i++){ // Save a copy of current xyz arrays that wont be modified by rotation
+                    for(int i = 0; i < 8100; i++){ 
                         xArraySAVE[i] = xArray[i];
                         yArraySAVE[i] = yArray[i];
                         zArraySAVE[i] = zArray[i];
@@ -312,7 +378,8 @@ int main(){
                     draw3dFlag = true;
                 }
             }
-            if(desiredAngle %4 == 0){   // temporary, stepper step size is too big. TODO: use microstepper (need power supply)
+                // Move stepper and servo. Store xyz Coordinates
+            if(desiredAngle %4 == 0){   // temporary, stepper step size is too big.
             stepper.step(direction, 1, 7);
             }
             servo.writePos((float)depthMapLayer);
@@ -323,7 +390,7 @@ int main(){
                 zArray[pixelIndex] = -(int16_t)(rangeCutoff / 2);
             }
             pixelIndex++;
-            draw3dFlag = true; // maybe temporary? draws 3d object as it is scanned
+            draw3dFlag = true; // Maybe temporary? Draws 3d object as it is scanned if true
             scanFlag = false;
         }
 
