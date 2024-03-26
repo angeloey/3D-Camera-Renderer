@@ -64,8 +64,11 @@ public:
     uint32_t _colour;
     uint32_t _symbolColour;
 
-    //button type 0,1,2,3,4,5,6 = blank, up, down, left, right, topRight, bottomRight // purely cosmetic
+    //button type 0,1,2,3,4,scales5,6 = blank, up, down, left, right, topRight, bottomRight // purely cosmetic
     uint8_t _buttonType;
+
+    //slider output, inc/dec with progress along its tracks, 0 - 100.
+    uint8_t _sliderOut;
 
 private:
 

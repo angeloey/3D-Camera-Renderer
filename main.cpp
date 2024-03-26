@@ -39,7 +39,7 @@ uint16_t pixelIndex = 0;  // Current xyzArray index to write/read
 
     // Offsets/Coordinates for drawing on LCD
 uint8_t xOffset3d = 240;        // Offsets for drawing 3D object centred on (0,0) which is at the top left of the LCD
-uint8_t yOffset3d = 120;
+uint8_t yOffset3d = 127;
 uint16_t radarXoffset = 110;    // Position offsets for drawing radar view
 uint16_t radarYoffset = 222;
 uint16_t depthMapXoffset = 310; // Position offsets for drawing depth map
@@ -69,7 +69,10 @@ int16_t zRotateIndex = 0;
     // Misc.
 int rotationAxis = 0; // Axis of rotation for 3D objects
 const double pi = 3.14159265359; // nom nom nom
-
+uint32_t drawColour;
+uint8_t red;
+uint8_t green;
+uint8_t blue;
 
     // Initialization, Classes/Objects/Structs/Etc.
 irSense IR(A0); // initialize IR sensor, reading from Pin A0
@@ -92,7 +95,7 @@ Button zDecrease(20, 60, 180, 220, LCD_COLOR_BLUE, LCD_COLOR_YELLOW, 6, touchSta
 Button resetObject(350, 470, 230, 262, LCD_COLOR_MAGENTA, LCD_COLOR_CYAN, 0, touchState);   // Restore save.
 Button fovDecrease(75, 130, 230, 262, LCD_COLOR_DARKCYAN, LCD_COLOR_WHITE, 0, touchState);  // fov-, Increases focal length.
 Button fovIncrease(10, 65, 230, 262, LCD_COLOR_DARKBLUE, LCD_COLOR_WHITE, 0, touchState);   // fov+, Decreases focal length.
-Slider slideReset(10, 65, 10, 42, LCD_COLOR_LIGHTMAGENTA, LCD_COLOR_WHITE, 0, touchState, true, 30, 450);
+Slider slideColour(10, 65, 10, 42, LCD_COLOR_LIGHTMAGENTA, LCD_COLOR_WHITE, 0, touchState, true, 30, 450);
     // Mbed stuff, Tickers/Interrupts/Etc.
 Ticker nextStep;     // used to iterate through object scan
 Ticker updateScreen; // Refresh screen with updated view from selected mode, normally 50Hz
@@ -129,7 +132,7 @@ void drawDebugScreen(void){
     BSP_LCD_DisplayStringAt(0, LINE(8), (uint8_t *)&text, LEFT_MODE);
 }
 
-    // Select & Execute menu options when button is pressed
+    // Select & Execute menu options when button is pressed // Triggered by interrupts in rotary lib
 void rotaryButtonPressed(void){
     updateScreen.detach();
     nextStep.detach();
@@ -142,10 +145,11 @@ void rotaryButtonPressed(void){
         case 1:
                 // Attatch ticker to this flag. Redraws Object
             updateScreen.attach(draw3dObject, 20ms); // 50Hz
+            spin = true;
             break;
         case 2:
                 // Restore 3D object from save
-            for(int i = 0; i < 8; i++){
+            for(int i = 0; i < 8100; i++){
                 xArray[i] = xArraySAVE[i]; 
                 yArray[i] = yArraySAVE[i];
                 zArray[i] = zArraySAVE[i];
@@ -156,7 +160,7 @@ void rotaryButtonPressed(void){
             zIncrease.drawButton(); zDecrease.drawButton();
             fovIncrease.drawButton(); fovDecrease.drawButton();
             resetObject.drawButton();
-            slideReset.drawButton();
+            slideColour.drawButton();
             BSP_LCD_SetFont(&Font16);
             BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
             BSP_LCD_DisplayStringAt(80, 241, (uint8_t*)"fov-", LEFT_MODE);
@@ -248,7 +252,6 @@ void sensorUpdate(float distance, float angle, uint8_t layer, float rangePot){
     // Project model defined in xyz arrays onto the LCD 
 void draw3dObject(void){
     draw3dFlag = true;
-    spin = false;
     rotateTouchFlag = false;
     loadTestCube = false;
 }
@@ -272,14 +275,14 @@ void manualRotation(void){
     // Rotate a cube around all 3 axis, 3d rendering demo for testing/debugging
 void rotatingCubeDemo(void){
         // Storing 8 vertices of a cube in xyz arrays
-     xArray[0] = -40; yArray[0] = -40; zArray[0] = 40;  // front bottom left
-     xArray[1] = 40; yArray[1] = -40; zArray[1] = 40;   // front bottom right
-     xArray[2] = 40; yArray[2] = 40; zArray[2] = 40;    // front top right
-     xArray[3] = -40; yArray[3] = 40; zArray[3] = 40;   // front top left
-     xArray[4] = -40; yArray[4] = -40; zArray[4] = -40; // back bottom left
-     xArray[5] = 40; yArray[5] = -40; zArray[5] = -40;  // back bottom right
-     xArray[6] = 40; yArray[6] = 40; zArray[6] = -40;   // back top right
-     xArray[7] = -40; yArray[7] = 40; zArray[7] = -40;  // back top left
+    xArray[0] = -40; yArray[0] = -40; zArray[0] = 40;  // front bottom left
+    xArray[1] = 40; yArray[1] = -40; zArray[1] = 40;   // front bottom right
+    xArray[2] = 40; yArray[2] = 40; zArray[2] = 40;    // front top right
+    xArray[3] = -40; yArray[3] = 40; zArray[3] = 40;   // front top left
+    xArray[4] = -40; yArray[4] = -40; zArray[4] = -40; // back bottom left
+    xArray[5] = 40; yArray[5] = -40; zArray[5] = -40;  // back bottom right
+    xArray[6] = 40; yArray[6] = 40; zArray[6] = -40;   // back top right
+    xArray[7] = -40; yArray[7] = 40; zArray[7] = -40;  // back top left
         // Save a copy of current xyz arrays that wont be modified by rotation (only first 8 for this demo)
     for(int i = 0; i < 8; i++){
         xArraySAVE[i] = xArray[i];
@@ -290,7 +293,6 @@ void rotatingCubeDemo(void){
     for(int j = 0; j<361; j++){
         testObject.rotateProjection(j, rotationAxis);
         testObject.generateProjected();
-        BSP_LCD_Clear(LCD_COLOR_BLACK);
         drawDebugCube();
             // Restore xyz data from save
         for(int i = 0; i < 8; i++){
@@ -309,21 +311,24 @@ void rotatingCubeDemo(void){
 
     // Draw whatever is in the first 8 indexes, as if it were a debug cube. Development tool.
 void drawDebugCube(void){
-        BSP_LCD_SetTextColor(LCD_COLOR_RED);    // Edges connecting front and rear faces
-        BSP_LCD_DrawLine(testObject.xProjected[7]+xOffset3d, testObject.yProjected[7]+yOffset3d, testObject.xProjected[3]+xOffset3d, testObject.yProjected[3]+yOffset3d);
-        BSP_LCD_DrawLine(testObject.xProjected[6]+xOffset3d, testObject.yProjected[6]+yOffset3d, testObject.xProjected[2]+xOffset3d, testObject.yProjected[2]+yOffset3d);
-        BSP_LCD_DrawLine(testObject.xProjected[4]+xOffset3d, testObject.yProjected[4]+yOffset3d, testObject.xProjected[0]+xOffset3d, testObject.yProjected[0]+yOffset3d);
-        BSP_LCD_DrawLine(testObject.xProjected[5]+xOffset3d, testObject.yProjected[5]+yOffset3d, testObject.xProjected[1]+xOffset3d, testObject.yProjected[1]+yOffset3d);
-        BSP_LCD_SetTextColor(LCD_COLOR_YELLOW); // Front face
-        BSP_LCD_DrawLine(testObject.xProjected[0]+xOffset3d, testObject.yProjected[0]+yOffset3d, testObject.xProjected[1]+xOffset3d, testObject.yProjected[1]+yOffset3d);
-        BSP_LCD_DrawLine(testObject.xProjected[1]+xOffset3d, testObject.yProjected[1]+yOffset3d, testObject.xProjected[2]+xOffset3d, testObject.yProjected[2]+yOffset3d);
-        BSP_LCD_DrawLine(testObject.xProjected[2]+xOffset3d, testObject.yProjected[2]+yOffset3d, testObject.xProjected[3]+xOffset3d, testObject.yProjected[3]+ yOffset3d);
-        BSP_LCD_DrawLine(testObject.xProjected[3]+xOffset3d, testObject.yProjected[3]+yOffset3d, testObject.xProjected[0]+xOffset3d, testObject.yProjected[0]+yOffset3d);
-        BSP_LCD_SetTextColor(LCD_COLOR_BLUE);   // Rear face
-        BSP_LCD_DrawLine(testObject.xProjected[4]+xOffset3d, testObject.yProjected[4]+yOffset3d, testObject.xProjected[5]+xOffset3d, testObject.yProjected[5]+yOffset3d);
-        BSP_LCD_DrawLine(testObject.xProjected[5]+xOffset3d, testObject.yProjected[5]+yOffset3d, testObject.xProjected[6]+xOffset3d, testObject.yProjected[6]+yOffset3d);
-        BSP_LCD_DrawLine(testObject.xProjected[6]+xOffset3d, testObject.yProjected[6]+yOffset3d, testObject.xProjected[7]+xOffset3d, testObject.yProjected[7]+yOffset3d);
-        BSP_LCD_DrawLine(testObject.xProjected[7]+xOffset3d, testObject.yProjected[7]+yOffset3d, testObject.xProjected[4]+xOffset3d, testObject.yProjected[4]+yOffset3d);    
+    while (!(LTDC->CDSR & LTDC_CDSR_VSYNCS)) {}     // Wait for v-sync. (Magic.)
+    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+    BSP_LCD_FillRect(80, 50, 320, 155);
+    BSP_LCD_SetTextColor(LCD_COLOR_RED);    // Edges connecting front and rear faces
+    BSP_LCD_DrawLine(testObject.xProjected[7]+xOffset3d, testObject.yProjected[7]+yOffset3d, testObject.xProjected[3]+xOffset3d, testObject.yProjected[3]+yOffset3d);
+    BSP_LCD_DrawLine(testObject.xProjected[6]+xOffset3d, testObject.yProjected[6]+yOffset3d, testObject.xProjected[2]+xOffset3d, testObject.yProjected[2]+yOffset3d);
+    BSP_LCD_DrawLine(testObject.xProjected[4]+xOffset3d, testObject.yProjected[4]+yOffset3d, testObject.xProjected[0]+xOffset3d, testObject.yProjected[0]+yOffset3d);
+    BSP_LCD_DrawLine(testObject.xProjected[5]+xOffset3d, testObject.yProjected[5]+yOffset3d, testObject.xProjected[1]+xOffset3d, testObject.yProjected[1]+yOffset3d);
+    BSP_LCD_SetTextColor(LCD_COLOR_YELLOW); // Front face
+    BSP_LCD_DrawLine(testObject.xProjected[0]+xOffset3d, testObject.yProjected[0]+yOffset3d, testObject.xProjected[1]+xOffset3d, testObject.yProjected[1]+yOffset3d);
+    BSP_LCD_DrawLine(testObject.xProjected[1]+xOffset3d, testObject.yProjected[1]+yOffset3d, testObject.xProjected[2]+xOffset3d, testObject.yProjected[2]+yOffset3d);
+    BSP_LCD_DrawLine(testObject.xProjected[2]+xOffset3d, testObject.yProjected[2]+yOffset3d, testObject.xProjected[3]+xOffset3d, testObject.yProjected[3]+ yOffset3d);
+    BSP_LCD_DrawLine(testObject.xProjected[3]+xOffset3d, testObject.yProjected[3]+yOffset3d, testObject.xProjected[0]+xOffset3d, testObject.yProjected[0]+yOffset3d);
+    BSP_LCD_SetTextColor(LCD_COLOR_BLUE);   // Rear face
+    BSP_LCD_DrawLine(testObject.xProjected[4]+xOffset3d, testObject.yProjected[4]+yOffset3d, testObject.xProjected[5]+xOffset3d, testObject.yProjected[5]+yOffset3d);
+    BSP_LCD_DrawLine(testObject.xProjected[5]+xOffset3d, testObject.yProjected[5]+yOffset3d, testObject.xProjected[6]+xOffset3d, testObject.yProjected[6]+yOffset3d);
+    BSP_LCD_DrawLine(testObject.xProjected[6]+xOffset3d, testObject.yProjected[6]+yOffset3d, testObject.xProjected[7]+xOffset3d, testObject.yProjected[7]+yOffset3d);
+    BSP_LCD_DrawLine(testObject.xProjected[7]+xOffset3d, testObject.yProjected[7]+yOffset3d, testObject.xProjected[4]+xOffset3d, testObject.yProjected[4]+yOffset3d);    
 }
 
 
@@ -357,8 +362,7 @@ int main(){
             // Manual control over 3D render (Slow)
         if(rotateTouchFlag == true){
                 // Rotate or reset according to buttons pressed
-                slideReset.isPressed();
-            if(fovIncrease.isPressed()) {testObject._focalLength+=1;}                  // Note: yes. if-elseif-else is faster here. (stops comparisons when true).
+            if(fovIncrease.isPressed()) {testObject._focalLength+=1;}                 // Note: yes. if-elseif-else is faster here. (stops comparisons when true).
             if(fovDecrease.isPressed()) {testObject._focalLength-=1;}                 // using if-if-if to support multiple simultaneous button presses.
             if(xIncrease.isPressed()) {testObject.rotateProjection(1, 0);}
             if(xDecrease.isPressed()) {testObject.rotateProjection(-1, 0);}
@@ -367,22 +371,40 @@ int main(){
             if(zIncrease.isPressed()) {testObject.rotateProjection(1, 2);}
             if(zDecrease.isPressed()) {testObject.rotateProjection(-1, 2);}
             if(resetObject.isPressed()){
-                for(int i = 0; i < 8; i++){
+                loadTestCube = false;
+                for(int i = 0; i < 8100; i++){
                     xArray[i] = xArraySAVE[i]; 
                     yArray[i] = yArraySAVE[i];
                     zArray[i] = zArraySAVE[i];
                 }
             }
+                // Choose object colour via slider.
+            slideColour.isPressed();
+            if(slideColour._sliderOut <= 33){
+                red = utils.valmap(slideColour._sliderOut, 0, 33, 0, 255);
+                green = utils.valmap(slideColour._sliderOut, 0, 33, 255, 0);
+                drawColour = utils.argbToHex(0xFF, red, green, blue);
+            }else if(slideColour._sliderOut <= 66){
+                green = utils.valmap(slideColour._sliderOut, 0, 33, 0, 255);
+                blue = utils.valmap(slideColour._sliderOut, 0, 33, 255, 0);
+                drawColour = utils.argbToHex(0xFF, red, green, blue);
+            }else if(slideColour._sliderOut <= 100){
+                blue = utils.valmap(slideColour._sliderOut, 0, 33, 0, 255);
+                red = utils.valmap(slideColour._sliderOut, 0, 33, 255, 0);
+                drawColour = utils.argbToHex(0xFF, red, green, blue);
+            }
                 // Generate coordinates, Clear Object, Draw image. (Only clear immidiately before drawing to reduce strobing)
-                // Buttons are not redrawn, But also not cleared. Faster.
+                // Buttons are not redrawn, But also not cleared. Faster. (Exception > Sliders)
             testObject.generateProjected();
-            BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-            BSP_LCD_FillRect(80, 50, 320, 155);
+            while (!(LTDC->CDSR & LTDC_CDSR_VSYNCS)) {}     // Wait for v-sync. (Magic.)
             BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
             BSP_LCD_DrawRect(79, 49, 321, 156);
             if(loadTestCube == true){
                 drawDebugCube();
             }else{
+                BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+                BSP_LCD_FillRect(80, 50, 320, 155);
+                BSP_LCD_SetTextColor(drawColour);
                 for(int i = 0; i < 8099; i++){
                     BSP_LCD_DrawLine(testObject.xProjected[i] +xOffset3d, testObject.yProjected[i] +yOffset3d, testObject.xProjected[i+1] +xOffset3d,testObject.yProjected[i+1] +yOffset3d);
                 }

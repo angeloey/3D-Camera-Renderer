@@ -169,6 +169,12 @@ void Slider::drawButton(){
     }
 }
 
+    // Have this here so that this library is not dependant on myUtils.h
+float valMap (float value, float istart, float istop, float ostart, float ostop){  
+    float mappedVal = ostart + (ostop - ostart) * ((value - istart) / (istop - istart));
+    return mappedVal;
+}
+
     // Return true if the screen is touched within the buttons coordinates
 bool Slider::isPressed(void){
     BSP_TS_GetState(&touchState);
@@ -181,10 +187,13 @@ bool Slider::isPressed(void){
                         int mid = (_xMax - _xMin)/2;
                         _xMin = *touchState.touchX - mid;
                         _xMax = *touchState.touchX + mid;
+                        _sliderOut = valMap((uint16_t)*touchState.touchX, _trackStart, _trackEnd, 0, 100);
+
                     }else{
                         int mid = (_yMax - _yMin)/2;
                         _yMin = *touchState.touchY - mid;
                         _yMax = *touchState.touchY + mid;
+                        _sliderOut = valMap((uint16_t)*touchState.touchY, _trackStart, _trackEnd, 0, 100);
                     }
                     drawButton();
                     _isPressed = true;
