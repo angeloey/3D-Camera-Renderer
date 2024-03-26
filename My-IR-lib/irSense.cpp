@@ -18,6 +18,7 @@ float irSense::lastDistance(void){
 }
 
     // Have this here so that this library is not dependant on myUtils.h
+    // Returns a mapped value of the input, from one numerical range to another.
 float distanceMap (float value, float istart, float istop, float ostart, float ostop){  
     float mappedVal = ostart + (ostop - ostart) * ((value - istart) / (istop - istart));
     return mappedVal;
@@ -27,8 +28,8 @@ float distanceMap (float value, float istart, float istop, float ostart, float o
 float irSense::getDistance(){
     readVoltage();
     if(voltage >= 2.3){                                 // crudely approximating from graph included in datasheet
-        distance = distanceMap(voltage,2.3,3.2,10,5);   // have to call this loads because relationship is non-linear
-    } else if (voltage < 2.3 && voltage >= 1.3){        // See DATASHEET
+        distance = distanceMap(voltage,2.3,3.2,10,5);   // have to if-elseif loads because relationship is non-linear
+    } else if (voltage < 2.3 && voltage >= 1.3){        // See DATASHEET included in README.MD
         distance = distanceMap(voltage,1.3,2.3,20,10);
     } else if (voltage < 1.3 && voltage >= 0.9){
         distance = distanceMap(voltage,0.9,1.3,30,20);

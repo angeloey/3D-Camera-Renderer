@@ -25,32 +25,21 @@ void rotatingCubeDemo(void);
 void drawDebugCube(void);
 void manualRotation(void);
 
-    // General consensus online: multiple 1D arrays are faster than a multi-dimensional array, save for minimal gains in edge cases.
-    // Decision: Prioritize readibility and use 1D array approach
-    // XYZ values for 3d render are stored/modified in these arrays
-float xArray[8100];       
-float yArray[8100];       // Current working set of xyz coordinates
-float zArray[8100];
-float xArraySAVE[8100];
-float yArraySAVE[8100];   // Used to save xyz values. It's a "restore point".
-float zArraySAVE[8100];
-uint16_t pixelIndex = 0;  // Current xyzArray index to write/read
-
     // Offsets/Coordinates for drawing on LCD
-uint8_t xOffset3d = 240;        // Offsets for drawing 3D object centred on (0,0) which is at the top left of the LCD
+uint8_t xOffset3d = 240;        // Offsets for drawing 3D object centred on (0,0) which is at the top left of the LCD.
 uint8_t yOffset3d = 127;
-uint16_t radarXoffset = 110;    // Position offsets for drawing radar view
+uint16_t radarXoffset = 110;    // Position offsets for drawing radar view.
 uint16_t radarYoffset = 202;
-uint16_t depthMapXoffset = 310; // Position offsets for drawing depth map
+uint16_t depthMapXoffset = 310; // Position offsets for drawing depth map.
 uint16_t depthMapYoffset = 202;
-uint16_t lastX; // Coordinates of last drawn line for radar view, used to overwrite in black without clearing entire radar
-uint16_t lastY; // purely cosmetic
+uint16_t lastX;                 // Coordinates of last drawn line for radar view, used to overwrite in black without clearing entire radar.
+uint16_t lastY;                 // purely cosmetic.
 
     // Obtaining XYZ values via scan
-bool direction = false;     // Scan direction: False = CCW(-X), True = CW(+X) 
-int16_t desiredAngle = 0;   // Scan/Stepper angle (Horizontal/X Axis)
-uint8_t depthMapLayer = 0;  // Y value/layer of depthmap, also used for servo angle (Vertical/Y Axis)
-uint8_t rangeCutoff = 100;  // Any distances sensed past this value, are capped to this value (Depth/Z Axis)
+bool direction = false;         // Scan direction: False = CCW(-X), True = CW(+X) 
+int16_t desiredAngle = 0;       // Scan/Stepper angle (Horizontal/X Axis)
+uint8_t depthMapLayer = 0;      // Y value/layer of depthmap, also used for servo angle (Vertical/Y Axis)
+uint8_t rangeCutoff = 100;      // Any distances sensed past this value, are capped to this value (Depth/Z Axis)
 
     // Flags, mostly for executing functions incompatible with ISR (mutex, too slow, etc.)
 bool scanFlag = false;          // Scan object flag, progress through 3D scan when this flag is set.
@@ -61,31 +50,31 @@ bool loadTestCube = true;       // Until this flag is un-set, 3D renderer draws 
 bool drawDebugFlag = false;     // Draw Debug-Screen. Peripheral data, etc.
 
     // Menu navigation/control
-int8_t menuCounter = 0;    // Used to store last/select a menu option via rotary encoder
-int16_t xRotateIndex = 0;
-int16_t yRotateIndex = 0;  // Angle indexes for manual object rotation //UNUSED?
-int16_t zRotateIndex = 0;
+int8_t menuCounter = 0;         // Used to store last/select a menu option via rotary encoder.
+uint8_t rotationAxis = 0;       // Axis of rotation for 3D objects. 0, 1, 2 == X, Y, Z.
+uint16_t pixelIndex = 0;        // Current xyz index to write/read.
 
     // Misc.
-int rotationAxis = 0; // Axis of rotation for 3D objects
-const double pi = 3.14159265359; // nom nom nom
-uint32_t drawColour = LCD_COLOR_YELLOW;
-uint8_t red;
-uint8_t green;
-uint8_t blue;
+const double pi = 3.14159265359;        // nom nom nom
+uint32_t drawColour = LCD_COLOR_YELLOW; // This is modified by the pink colour slider. Default setting is yellow.
+uint8_t red;                            
+uint8_t green;          // RGB values, used to cycle through RGB spectrum via slider.
+uint8_t blue;           
+Utilities utils;        // Utilities class. Frequently used, non program-specific functions .
 
-    // Initialization, Classes/Objects/Structs/Etc.
-irSense IR(A0); // initialize IR sensor, reading from Pin A0
-Pot rangePot(A1); // initialize Potentiometer, reading from Pin A1
-Servo servo(PC_7, 180, 2.5, 1.5); // initialize Servo motor, on pin PC_7 (D0), with a 90 degree range between 1.5 and 2ms.
-Stepper stepper(D1, D2, D3, D4, 7.5); // initialize Stepper motor, on pins D1, D2, D3, D4, with a step angle of 7.5 (not yet implemented)
-Rotary encoder(D5, D6, D7, &rotaryButtonPressed, &rotaryTurned); // initialize Rotary encoder on D5,D6,D7, and pass functions to object
-Object3d testObject(xArray, yArray, zArray, -200); // initialize test 3d object
-Utilities utils; // initialize myUtils as utils
-//microStepper stepper(A5, A4, A3, A2, 7.5); // Cant use microstepping as the board only has 2 DAC outs :(
+
+    // Initialization, Peripheral Objects/Structs.
+irSense IR(A0);                                     // initialize IR sensor, reading from Pin A0
+Pot rangePot(A1);                                   // initialize Potentiometer, reading from Pin A1
+Servo servo(D0, 180, 2.5, 1.5);                     // initialize Servo motor, on pin D0, with a 180 degree range between 1.5 and 2ms.
+Stepper stepper(D1, D2, D3, D4, 7.5);               // initialize Stepper motor, on pins D1, D2, D3, D4, with a step angle of 7.5
+Rotary encoder(D5, D6, D7, &rotaryButtonPressed, &rotaryTurned);    // initialize Rotary encoder on D5,D6,D7, and pass functions to object
+//microStepper stepper(A5, A4, A3, A2, 7.5);        // Cant use microstepping as the board only has 2 DAC outs :(
+Object3d render3D(-200);  // initialize 3D Object
+TS_StateTypeDef touchState;                         // Touchscreen-state Struct
+
 
     // Touchscreen buttons
-TS_StateTypeDef touchState;
 Button xIncrease(420, 460, 52, 92, LCD_COLOR_RED, LCD_COLOR_YELLOW, 1, touchState);         // Rotate around z axis
 Button xDecrease(420, 460, 180, 220, LCD_COLOR_RED, LCD_COLOR_YELLOW, 2, touchState);
 Button yDecrease(140, 180, 225, 265, LCD_COLOR_GREEN, LCD_COLOR_YELLOW, 3, touchState);     // Rotate around y axis.
@@ -96,10 +85,10 @@ Button resetObject(350, 470, 230, 262, LCD_COLOR_MAGENTA, LCD_COLOR_CYAN, 0, tou
 Button fovDecrease(75, 130, 230, 262, LCD_COLOR_DARKCYAN, LCD_COLOR_WHITE, 0, touchState);  // fov-, Increases focal length.
 Button fovIncrease(10, 65, 230, 262, LCD_COLOR_DARKBLUE, LCD_COLOR_WHITE, 0, touchState);   // fov+, Decreases focal length.
 Slider slideColour(10, 65, 10, 42, LCD_COLOR_LIGHTMAGENTA, LCD_COLOR_WHITE, 0, touchState, true, 30, 450);
+
     // Mbed stuff, Tickers/Interrupts/Etc.
 Ticker nextStep;     // used to iterate through object scan
 Ticker updateScreen; // Refresh screen with updated view from selected mode, normally 50Hz
-
 
 //----------------------------Function definitons--------------------------------------------
 
@@ -125,9 +114,9 @@ void rotaryButtonPressed(void){
             nextStep.detach();
                 // Restore 3D object from save
             for(int i = 0; i < 8100; i++){
-                xArray[i] = xArraySAVE[i]; 
-                yArray[i] = yArraySAVE[i];
-                zArray[i] = zArraySAVE[i];
+                render3D.vertices.x[i] = render3D.verticesSAVE.x[i]; 
+                render3D.vertices.y[i] = render3D.verticesSAVE.y[i];
+                render3D.vertices.z[i] = render3D.verticesSAVE.z[i];
             }
                 // Draw buttons
             xIncrease.drawButton(); xDecrease.drawButton();
@@ -226,30 +215,30 @@ void sensorUpdate(float distance, float angle, uint8_t layer, float rangePot){
     // Rotate a cube around all 3 axis, 3d rendering demo for testing/debugging
 void rotatingCubeDemo(void){
         // Storing 8 vertices of a cube in xyz arrays
-    xArray[0] = -40; yArray[0] = -40; zArray[0] = 40;  // front bottom left
-    xArray[1] = 40; yArray[1] = -40; zArray[1] = 40;   // front bottom right
-    xArray[2] = 40; yArray[2] = 40; zArray[2] = 40;    // front top right
-    xArray[3] = -40; yArray[3] = 40; zArray[3] = 40;   // front top left
-    xArray[4] = -40; yArray[4] = -40; zArray[4] = -40; // back bottom left
-    xArray[5] = 40; yArray[5] = -40; zArray[5] = -40;  // back bottom right
-    xArray[6] = 40; yArray[6] = 40; zArray[6] = -40;   // back top right
-    xArray[7] = -40; yArray[7] = 40; zArray[7] = -40;  // back top left
+    render3D.vertices.x[0] = -40; render3D.vertices.y[0] = -40; render3D.vertices.z[0] = 40;  // front bottom left
+    render3D.vertices.x[1] = 40; render3D.vertices.y[1] = -40; render3D.vertices.z[1] = 40;   // front bottom right
+    render3D.vertices.x[2] = 40; render3D.vertices.y[2] = 40; render3D.vertices.z[2] = 40;    // front top right
+    render3D.vertices.x[3] = -40; render3D.vertices.y[3] = 40; render3D.vertices.z[3] = 40;   // front top left
+    render3D.vertices.x[4] = -40; render3D.vertices.y[4] = -40; render3D.vertices.z[4] = -40; // back bottom left
+    render3D.vertices.x[5] = 40; render3D.vertices.y[5] = -40; render3D.vertices.z[5] = -40;  // back bottom right
+    render3D.vertices.x[6] = 40; render3D.vertices.y[6] = 40; render3D.vertices.z[6] = -40;   // back top right
+    render3D.vertices.x[7] = -40; render3D.vertices.y[7] = 40; render3D.vertices.z[7] = -40;  // back top left
         // Save a copy of current xyz arrays that wont be modified by rotation (only first 8 for this demo)
     for(int i = 0; i < 8; i++){
-        xArraySAVE[i] = xArray[i];
-        yArraySAVE[i] = yArray[i];
-        zArraySAVE[i] = zArray[i];
+        render3D.verticesSAVE.x[i] = render3D.vertices.x[i];
+        render3D.verticesSAVE.y[i] = render3D.vertices.y[i];
+        render3D.verticesSAVE.z[i] = render3D.vertices.z[i];
     }
         // Display the cube at every angle from 0 to 360 along an axis
     for(int j = 0; j<361; j++){
-        testObject.rotateProjection(j, rotationAxis);
-        testObject.generateProjected();
+        render3D.rotateVertices(j, rotationAxis);
+        render3D.generateProjected();
         drawDebugCube();
             // Restore xyz data from save
         for(int i = 0; i < 8; i++){
-            xArray[i] = xArraySAVE[i]; 
-            yArray[i] = yArraySAVE[i];
-            zArray[i] = zArraySAVE[i];
+            render3D.vertices.x[i] = render3D.verticesSAVE.x[i]; 
+            render3D.vertices.y[i] = render3D.verticesSAVE.y[i];
+            render3D.vertices.z[i] = render3D.verticesSAVE.z[i];
         }
     }
         // Cycle axis of rotation every full rotation
@@ -266,20 +255,20 @@ void drawDebugCube(void){
     BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
     BSP_LCD_FillRect(80, 50, 320, 155);
     BSP_LCD_SetTextColor(LCD_COLOR_RED);    // Edges connecting front and rear faces
-    BSP_LCD_DrawLine(testObject.xProjected[7]+xOffset3d, testObject.yProjected[7]+yOffset3d, testObject.xProjected[3]+xOffset3d, testObject.yProjected[3]+yOffset3d);
-    BSP_LCD_DrawLine(testObject.xProjected[6]+xOffset3d, testObject.yProjected[6]+yOffset3d, testObject.xProjected[2]+xOffset3d, testObject.yProjected[2]+yOffset3d);
-    BSP_LCD_DrawLine(testObject.xProjected[4]+xOffset3d, testObject.yProjected[4]+yOffset3d, testObject.xProjected[0]+xOffset3d, testObject.yProjected[0]+yOffset3d);
-    BSP_LCD_DrawLine(testObject.xProjected[5]+xOffset3d, testObject.yProjected[5]+yOffset3d, testObject.xProjected[1]+xOffset3d, testObject.yProjected[1]+yOffset3d);
+    BSP_LCD_DrawLine(render3D.xProjected[7]+xOffset3d, render3D.yProjected[7]+yOffset3d, render3D.xProjected[3]+xOffset3d, render3D.yProjected[3]+yOffset3d);
+    BSP_LCD_DrawLine(render3D.xProjected[6]+xOffset3d, render3D.yProjected[6]+yOffset3d, render3D.xProjected[2]+xOffset3d, render3D.yProjected[2]+yOffset3d);
+    BSP_LCD_DrawLine(render3D.xProjected[4]+xOffset3d, render3D.yProjected[4]+yOffset3d, render3D.xProjected[0]+xOffset3d, render3D.yProjected[0]+yOffset3d);
+    BSP_LCD_DrawLine(render3D.xProjected[5]+xOffset3d, render3D.yProjected[5]+yOffset3d, render3D.xProjected[1]+xOffset3d, render3D.yProjected[1]+yOffset3d);
     BSP_LCD_SetTextColor(LCD_COLOR_YELLOW); // Front face
-    BSP_LCD_DrawLine(testObject.xProjected[0]+xOffset3d, testObject.yProjected[0]+yOffset3d, testObject.xProjected[1]+xOffset3d, testObject.yProjected[1]+yOffset3d);
-    BSP_LCD_DrawLine(testObject.xProjected[1]+xOffset3d, testObject.yProjected[1]+yOffset3d, testObject.xProjected[2]+xOffset3d, testObject.yProjected[2]+yOffset3d);
-    BSP_LCD_DrawLine(testObject.xProjected[2]+xOffset3d, testObject.yProjected[2]+yOffset3d, testObject.xProjected[3]+xOffset3d, testObject.yProjected[3]+ yOffset3d);
-    BSP_LCD_DrawLine(testObject.xProjected[3]+xOffset3d, testObject.yProjected[3]+yOffset3d, testObject.xProjected[0]+xOffset3d, testObject.yProjected[0]+yOffset3d);
+    BSP_LCD_DrawLine(render3D.xProjected[0]+xOffset3d, render3D.yProjected[0]+yOffset3d, render3D.xProjected[1]+xOffset3d, render3D.yProjected[1]+yOffset3d);
+    BSP_LCD_DrawLine(render3D.xProjected[1]+xOffset3d, render3D.yProjected[1]+yOffset3d, render3D.xProjected[2]+xOffset3d, render3D.yProjected[2]+yOffset3d);
+    BSP_LCD_DrawLine(render3D.xProjected[2]+xOffset3d, render3D.yProjected[2]+yOffset3d, render3D.xProjected[3]+xOffset3d, render3D.yProjected[3]+ yOffset3d);
+    BSP_LCD_DrawLine(render3D.xProjected[3]+xOffset3d, render3D.yProjected[3]+yOffset3d, render3D.xProjected[0]+xOffset3d, render3D.yProjected[0]+yOffset3d);
     BSP_LCD_SetTextColor(LCD_COLOR_BLUE);   // Rear face
-    BSP_LCD_DrawLine(testObject.xProjected[4]+xOffset3d, testObject.yProjected[4]+yOffset3d, testObject.xProjected[5]+xOffset3d, testObject.yProjected[5]+yOffset3d);
-    BSP_LCD_DrawLine(testObject.xProjected[5]+xOffset3d, testObject.yProjected[5]+yOffset3d, testObject.xProjected[6]+xOffset3d, testObject.yProjected[6]+yOffset3d);
-    BSP_LCD_DrawLine(testObject.xProjected[6]+xOffset3d, testObject.yProjected[6]+yOffset3d, testObject.xProjected[7]+xOffset3d, testObject.yProjected[7]+yOffset3d);
-    BSP_LCD_DrawLine(testObject.xProjected[7]+xOffset3d, testObject.yProjected[7]+yOffset3d, testObject.xProjected[4]+xOffset3d, testObject.yProjected[4]+yOffset3d);    
+    BSP_LCD_DrawLine(render3D.xProjected[4]+xOffset3d, render3D.yProjected[4]+yOffset3d, render3D.xProjected[5]+xOffset3d, render3D.yProjected[5]+yOffset3d);
+    BSP_LCD_DrawLine(render3D.xProjected[5]+xOffset3d, render3D.yProjected[5]+yOffset3d, render3D.xProjected[6]+xOffset3d, render3D.yProjected[6]+yOffset3d);
+    BSP_LCD_DrawLine(render3D.xProjected[6]+xOffset3d, render3D.yProjected[6]+yOffset3d, render3D.xProjected[7]+xOffset3d, render3D.yProjected[7]+yOffset3d);
+    BSP_LCD_DrawLine(render3D.xProjected[7]+xOffset3d, render3D.yProjected[7]+yOffset3d, render3D.xProjected[4]+xOffset3d, render3D.yProjected[4]+yOffset3d);    
 }
 
 
@@ -338,20 +327,20 @@ int main(){
             // Manual control over 3D render (Slow)
         if(rotateTouchFlag == true){
                 // Rotate or reset according to buttons pressed
-            if(fovIncrease.isPressed()) {testObject._focalLength+=1;}                 // Note: yes. if-elseif-else is faster here. (stops comparisons when true).
-            if(fovDecrease.isPressed()) {testObject._focalLength-=1;}                 // using if-if-if to support multiple simultaneous button presses.
-            if(xIncrease.isPressed()) {testObject.rotateProjection(1, 0);}
-            if(xDecrease.isPressed()) {testObject.rotateProjection(-1, 0);}
-            if(yIncrease.isPressed()) {testObject.rotateProjection(1, 1);}
-            if(yDecrease.isPressed()) {testObject.rotateProjection(-1, 1);}
-            if(zIncrease.isPressed()) {testObject.rotateProjection(1, 2);}
-            if(zDecrease.isPressed()) {testObject.rotateProjection(-1, 2);}
+            if(fovIncrease.isPressed()) {render3D._focalLength+=1;}                 // Note: yes. if-elseif-else is faster here. (stops comparisons when true).
+            if(fovDecrease.isPressed()) {render3D._focalLength-=1;}                 // using if-if-if to support multiple simultaneous button presses.
+            if(xIncrease.isPressed()) {render3D.rotateVertices(1, 0);}
+            if(xDecrease.isPressed()) {render3D.rotateVertices(-1, 0);}
+            if(yIncrease.isPressed()) {render3D.rotateVertices(1, 1);}
+            if(yDecrease.isPressed()) {render3D.rotateVertices(-1, 1);}
+            if(zIncrease.isPressed()) {render3D.rotateVertices(1, 2);}
+            if(zDecrease.isPressed()) {render3D.rotateVertices(-1, 2);}
             if(resetObject.isPressed()){
                 loadTestCube = false;
                 for(int i = 0; i < 8100; i++){
-                    xArray[i] = xArraySAVE[i]; 
-                    yArray[i] = yArraySAVE[i];
-                    zArray[i] = zArraySAVE[i];
+                    render3D.vertices.x[i] = render3D.verticesSAVE.x[i]; 
+                    render3D.vertices.y[i] = render3D.verticesSAVE.y[i];
+                    render3D.vertices.z[i] = render3D.verticesSAVE.z[i];
                 }
             }
                 // Choose object colour via slider.
@@ -371,7 +360,7 @@ int main(){
             }
                 // Generate coordinates, Clear Object, Draw image. (Only clear immidiately before drawing to reduce strobing)
                 // Buttons are not redrawn, But also not cleared. Faster. (Exception > Sliders)
-            testObject.generateProjected();
+            render3D.generateProjected();
             while (!(LTDC->CDSR & LTDC_CDSR_VSYNCS)) {}     // Wait for v-sync. (Magic.)
             BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
             BSP_LCD_DrawRect(79, 49, 321, 156);
@@ -382,7 +371,7 @@ int main(){
                 BSP_LCD_FillRect(80, 50, 320, 155);
                 BSP_LCD_SetTextColor(drawColour);
                 for(int i = 0; i < 8099; i++){
-                    BSP_LCD_DrawLine(testObject.xProjected[i] +xOffset3d, testObject.yProjected[i] +yOffset3d, testObject.xProjected[i+1] +xOffset3d,testObject.yProjected[i+1] +yOffset3d);
+                    BSP_LCD_DrawLine(render3D.xProjected[i] +xOffset3d, render3D.yProjected[i] +yOffset3d, render3D.xProjected[i+1] +xOffset3d,render3D.yProjected[i+1] +yOffset3d);
                 }
             }
             rotateTouchFlag = false;
@@ -406,9 +395,9 @@ int main(){
                     depthMapLayer = 0;
                     pixelIndex = 0;
                     for(int i = 0; i < 8100; i++){ 
-                        xArraySAVE[i] = xArray[i];
-                        yArraySAVE[i] = yArray[i];
-                        zArraySAVE[i] = zArray[i];
+                        render3D.verticesSAVE.x[i] = render3D.vertices.x[i];
+                        render3D.verticesSAVE.y[i] = render3D.vertices.y[i];
+                        render3D.verticesSAVE.z[i] = render3D.vertices.z[i];
                     }
                     draw3dFlag = true;
                 }
@@ -416,10 +405,10 @@ int main(){
                 // Move stepper and servo. Store xyz Coordinates
             if(desiredAngle %4 == 0) {stepper.step(direction, 1, 7);} // Temporary? Uni only has crap steppers. (step angle too large, even with half step)
             servo.writePos((float)depthMapLayer);
-            yArray[pixelIndex] = -45 + depthMapLayer;
-            xArray[pixelIndex] = -45 + desiredAngle;
-            zArray[pixelIndex] = (int16_t)(rangeCutoff / 2) - (int16_t)round(IR.lastDistance());
-            if(IR.lastDistance() >= rangeCutoff) {zArray[pixelIndex] = -(int16_t)(rangeCutoff / 2);}
+            render3D.vertices.y[pixelIndex] = -45 + depthMapLayer;
+            render3D.vertices.x[pixelIndex] = -45 + desiredAngle;
+            render3D.vertices.z[pixelIndex] = (int16_t)(rangeCutoff / 2) - (int16_t)round(IR.lastDistance());
+            if(IR.lastDistance() >= rangeCutoff) {render3D.vertices.z[pixelIndex] = -(int16_t)(rangeCutoff / 2);}
             pixelIndex++;
             draw3dFlag = true; // Maybe temporary? Draws 3d object as it is scanned if true
             scanFlag = false;
@@ -429,19 +418,19 @@ int main(){
         if(draw3dFlag == true){
             if(spin == true){
                 for(int j = 0; j<361; j++){
-                    testObject.rotateProjection(j, rotationAxis);
-                    testObject.generateProjected();
+                    render3D.rotateVertices(j, rotationAxis);
+                    render3D.generateProjected();
                     while (!(LTDC->CDSR & LTDC_CDSR_VSYNCS)) {}     // Wait for v-sync. (Magic.)
                     BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
                     BSP_LCD_FillRect(80, 50, 320, 155);
                     BSP_LCD_SetTextColor(drawColour);
                     for(int i = 0; i < 8099; i++){ // Connect each projected point to its neighbour
-                        BSP_LCD_DrawLine(testObject.xProjected[i] +xOffset3d, testObject.yProjected[i] +yOffset3d, testObject.xProjected[i+1] +xOffset3d,testObject.yProjected[i+1] +yOffset3d);
+                        BSP_LCD_DrawLine(render3D.xProjected[i] +xOffset3d, render3D.yProjected[i] +yOffset3d, render3D.xProjected[i+1] +xOffset3d,render3D.yProjected[i+1] +yOffset3d);
                     }
                     for(int i = 0; i < 8100; i++){ // Restore xyz data from save
-                        xArray[i] = xArraySAVE[i];
-                        yArray[i] = yArraySAVE[i];
-                        zArray[i] = zArraySAVE[i];
+                        render3D.vertices.x[i] = render3D.verticesSAVE.x[i];
+                        render3D.vertices.y[i] = render3D.verticesSAVE.y[i];
+                        render3D.vertices.z[i] = render3D.verticesSAVE.z[i];
                     }
                 }
                 rotationAxis++; // Cycle axis of rotation every full rotation
@@ -450,10 +439,10 @@ int main(){
                     updateScreen.detach();
                 }
             }else{
-                testObject.generateProjected();
+                render3D.generateProjected();
                 BSP_LCD_SetTextColor(drawColour);
                 for(int i = 0; i < 8099; i++){ // Connect each projected point to its neighbour
-                    BSP_LCD_DrawLine(testObject.xProjected[i] +xOffset3d, testObject.yProjected[i] +yOffset3d, testObject.xProjected[i+1] +xOffset3d,testObject.yProjected[i+1] +yOffset3d);
+                    BSP_LCD_DrawLine(render3D.xProjected[i] +xOffset3d, render3D.yProjected[i] +yOffset3d, render3D.xProjected[i+1] +xOffset3d,render3D.yProjected[i+1] +yOffset3d);
                 }
             }
             draw3dFlag = false;

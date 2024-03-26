@@ -172,6 +172,7 @@ void Slider::drawButton(){
 }
 
     // Have this here so that this library is not dependant on myUtils.h
+    // Returns a mapped value of the input, from one numerical range to another.
 float valMap (float value, float istart, float istop, float ostart, float ostop){  
     float mappedVal = ostart + (ostop - ostart) * ((value - istart) / (istop - istart));
     return mappedVal;

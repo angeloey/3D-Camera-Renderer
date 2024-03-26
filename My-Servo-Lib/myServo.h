@@ -15,7 +15,6 @@ public:
     // Sets new servo motor position in degrees
     void writePos(float newPos);
 
-
 private:
     PwmOut pwm;
 
