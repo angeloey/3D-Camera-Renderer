@@ -92,7 +92,7 @@ Button zDecrease(20, 60, 180, 220, LCD_COLOR_BLUE, LCD_COLOR_YELLOW, 6, touchSta
 Button resetObject(350, 470, 230, 262, LCD_COLOR_MAGENTA, LCD_COLOR_CYAN, 0, touchState);   // Restore save.
 Button fovDecrease(75, 130, 230, 262, LCD_COLOR_DARKCYAN, LCD_COLOR_WHITE, 0, touchState);  // fov-, Increases focal length.
 Button fovIncrease(10, 65, 230, 262, LCD_COLOR_DARKBLUE, LCD_COLOR_WHITE, 0, touchState);   // fov+, Decreases focal length.
-Button slideReset(10, 65, 10, 42, LCD_COLOR_LIGHTMAGENTA, LCD_COLOR_WHITE, 0, touchState);
+Slider slideReset(10, 65, 10, 42, LCD_COLOR_LIGHTMAGENTA, LCD_COLOR_WHITE, 0, touchState, true, 30, 450);
     // Mbed stuff, Tickers/Interrupts/Etc.
 Ticker nextStep;     // used to iterate through object scan
 Ticker updateScreen; // Refresh screen with updated view from selected mode, normally 50Hz
@@ -156,6 +156,7 @@ void rotaryButtonPressed(void){
             zIncrease.drawButton(); zDecrease.drawButton();
             fovIncrease.drawButton(); fovDecrease.drawButton();
             resetObject.drawButton();
+            slideReset.drawButton();
             BSP_LCD_SetFont(&Font16);
             BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
             BSP_LCD_DisplayStringAt(80, 241, (uint8_t*)"fov-", LEFT_MODE);
@@ -356,8 +357,9 @@ int main(){
             // Manual control over 3D render (Slow)
         if(rotateTouchFlag == true){
                 // Rotate or reset according to buttons pressed
-            if(fovIncrease.isPressed()) {testObject._focalLength++;}                  // Note: yes. if-elseif-else is faster here. (stops comparisons when true).
-            if(fovDecrease.isPressed()) {testObject._focalLength--;}                 // using if-if-if to support multiple simultaneous button presses.
+                slideReset.isPressed();
+            if(fovIncrease.isPressed()) {testObject._focalLength+=1;}                  // Note: yes. if-elseif-else is faster here. (stops comparisons when true).
+            if(fovDecrease.isPressed()) {testObject._focalLength-=1;}                 // using if-if-if to support multiple simultaneous button presses.
             if(xIncrease.isPressed()) {testObject.rotateProjection(1, 0);}
             if(xDecrease.isPressed()) {testObject.rotateProjection(-1, 0);}
             if(yIncrease.isPressed()) {testObject.rotateProjection(1, 1);}

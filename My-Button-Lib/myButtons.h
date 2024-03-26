@@ -80,6 +80,13 @@ private:
     // Is slider horizontal or vertical?
     bool _horizontal;
 
+    // Should it reset to origin position when you arent holding it
+    bool _autoReset;
+    uint16_t _xMinReset;
+    uint16_t _xMaxReset;
+    uint16_t _yMinReset;
+    uint16_t _yMaxReset;
+
     // Slider track
     uint16_t _trackStart;
     uint16_t _trackEnd;
