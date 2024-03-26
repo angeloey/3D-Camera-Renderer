@@ -75,9 +75,11 @@ void Button::drawButton(){
     // Return true if the screen is touched within the buttons coordinates
 bool Button::isPressed(void){
     BSP_TS_GetState(&touchState);
-            if (touchState.touchDetected) {              
-                if (*touchState.touchX >= _xMin && *touchState.touchX <= _xMax && *touchState.touchY >= _yMin && *touchState.touchY <= _yMax) {
-                    _isPressed = true;
+            if (touchState.touchDetected) {            
+                for(uint8_t i = 0; i < touchState.touchDetected; i++){  
+                    if (touchState.touchX[i] >= _xMin && touchState.touchX[i] <= _xMax && touchState.touchY[i] >= _yMin && touchState.touchY[i] <= _yMax) {
+                        _isPressed = true;
+                    }
                 }
             } else{
                 _isPressed = false;
@@ -179,24 +181,26 @@ float valMap (float value, float istart, float istop, float ostart, float ostop)
 bool Slider::isPressed(void){
     BSP_TS_GetState(&touchState);
                 // Move Slider as it is dragged
-            if (touchState.touchDetected) {              
-                if (*touchState.touchX >= _xMin && *touchState.touchX <= _xMax && *touchState.touchY >= _yMin && *touchState.touchY <= _yMax) {
-                    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-                    BSP_LCD_FillRect(_xMin -1, _yMin -1, ((_xMax +1) - (_xMin -1)), ((_yMax +1) - (_yMin -1)));
-                    if(_horizontal){
-                        int mid = (_xMax - _xMin)/2;
-                        _xMin = *touchState.touchX - mid;
-                        _xMax = *touchState.touchX + mid;
-                        _sliderOut = valMap((uint16_t)*touchState.touchX, _trackStart, _trackEnd, 0, 100);
+            if (touchState.touchDetected) {
+                for(uint8_t i = 0; i < touchState.touchDetected; i++){          
+                    if (touchState.touchX[i] >= _xMin && touchState.touchX[i] <= _xMax && touchState.touchY[i] >= _yMin && touchState.touchY[i] <= _yMax) {
+                        BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+                        BSP_LCD_FillRect(_xMin -1, _yMin -1, ((_xMax +1) - (_xMin -1)), ((_yMax +1) - (_yMin -1)));
+                        if(_horizontal){
+                            int mid = (_xMax - _xMin)/2;
+                            _xMin = touchState.touchX[i] - mid;
+                            _xMax = touchState.touchX[i] + mid;
+                            _sliderOut = valMap((uint16_t)touchState.touchX[i], _trackStart, _trackEnd, 0, 100);
 
-                    }else{
-                        int mid = (_yMax - _yMin)/2;
-                        _yMin = *touchState.touchY - mid;
-                        _yMax = *touchState.touchY + mid;
-                        _sliderOut = valMap((uint16_t)*touchState.touchY, _trackStart, _trackEnd, 0, 100);
+                        }else{
+                            int mid = (_yMax - _yMin)/2;
+                            _yMin = touchState.touchY[i] - mid;
+                            _yMax = touchState.touchY[i] + mid;
+                            _sliderOut = valMap((uint16_t)touchState.touchY[i], _trackStart, _trackEnd, 0, 100);
+                        }
+                        drawButton();
+                        _isPressed = true;
                     }
-                    drawButton();
-                    _isPressed = true;
                 }
             } else{
                 _isPressed = false;
