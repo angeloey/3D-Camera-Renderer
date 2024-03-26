@@ -20,7 +20,6 @@ void drawDepthMap(float distance, float angle, uint8_t layer, uint8_t range);
 void sensorUpdate(float distance, float angle, uint8_t layer, float rangePot);
 void rotaryButtonPressed(void);
 void rotaryTurned(void);
-void drawDebugScreen(void);
 void draw3dObject(void);
 void rotatingCubeDemo(void);
 void drawDebugCube(void);
@@ -41,9 +40,9 @@ uint16_t pixelIndex = 0;  // Current xyzArray index to write/read
 uint8_t xOffset3d = 240;        // Offsets for drawing 3D object centred on (0,0) which is at the top left of the LCD
 uint8_t yOffset3d = 127;
 uint16_t radarXoffset = 110;    // Position offsets for drawing radar view
-uint16_t radarYoffset = 222;
+uint16_t radarYoffset = 202;
 uint16_t depthMapXoffset = 310; // Position offsets for drawing depth map
-uint16_t depthMapYoffset = 222;
+uint16_t depthMapYoffset = 202;
 uint16_t lastX; // Coordinates of last drawn line for radar view, used to overwrite in black without clearing entire radar
 uint16_t lastY; // purely cosmetic
 
@@ -59,6 +58,7 @@ bool draw3dFlag = false;        // Draw 3D object when this flag is set.
 bool spin = false;              // Rotate 3D object automatically when this flag is set.
 bool rotateTouchFlag = false;   // Enable touch buttons flag.
 bool loadTestCube = true;       // Until this flag is un-set, 3D renderer draws a tri-coloured cube.
+bool drawDebugFlag = false;     // Draw Debug-Screen. Peripheral data, etc.
 
     // Menu navigation/control
 int8_t menuCounter = 0;    // Used to store last/select a menu option via rotary encoder
@@ -69,7 +69,7 @@ int16_t zRotateIndex = 0;
     // Misc.
 int rotationAxis = 0; // Axis of rotation for 3D objects
 const double pi = 3.14159265359; // nom nom nom
-uint32_t drawColour;
+uint32_t drawColour = LCD_COLOR_YELLOW;
 uint8_t red;
 uint8_t green;
 uint8_t blue;
@@ -103,51 +103,26 @@ Ticker updateScreen; // Refresh screen with updated view from selected mode, nor
 
 //----------------------------Function definitons--------------------------------------------
 
-    // Screen with relevant peripheral data, useful for debugging/testing
-void drawDebugScreen(void){
-    BSP_LCD_SetBackColor(LCD_COLOR_BLACK);
-    BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
-    char text [50];
-    sprintf((char*)text, "IR Distance: %.2f    Voltage: %.2f", IR.getDistance(), IR.readVoltage()); 
-    BSP_LCD_ClearStringLine(2);
-    BSP_LCD_DisplayStringAt(0, LINE(2), (uint8_t *)&text, LEFT_MODE);
-    float potVal = rangePot.readVoltage();
-    sprintf((char*)text, "Range-Pot Distance: %d    Voltage: %.2f", utils.valmap(potVal, 0, 3.3, 0, 100), potVal); 
-    BSP_LCD_ClearStringLine(3);
-    BSP_LCD_DisplayStringAt(0, LINE(3), (uint8_t *)&text, LEFT_MODE);
-    sprintf((char*)text, "Encoder Clockwise: %d", encoder.getClockwise()); 
-    BSP_LCD_ClearStringLine(4);
-    BSP_LCD_DisplayStringAt(0, LINE(4), (uint8_t *)&text, LEFT_MODE);
-    sprintf((char*)text, "Servo Position: %.2f", servo.readPos());
-    BSP_LCD_ClearStringLine(5);
-    BSP_LCD_DisplayStringAt(0, LINE(5), (uint8_t *)&text, LEFT_MODE);
-    sprintf((char*)text, "Scan Clockwise: %d    Angle: %d   Layer: %d", direction, desiredAngle, depthMapLayer);
-    BSP_LCD_ClearStringLine(6);
-    BSP_LCD_DisplayStringAt(0, LINE(6), (uint8_t *)&text, LEFT_MODE);
-    sprintf((char*)text, "Radar Offset X: %d   Y: %d", radarXoffset, radarYoffset); 
-    BSP_LCD_ClearStringLine(7);
-    BSP_LCD_DisplayStringAt(0, LINE(7), (uint8_t *)&text, LEFT_MODE);
-    sprintf((char*)text, "DepthMap Offset X: %d   Y: %d", depthMapXoffset, depthMapYoffset); 
-    BSP_LCD_ClearStringLine(8);
-    BSP_LCD_DisplayStringAt(0, LINE(8), (uint8_t *)&text, LEFT_MODE);
-}
-
     // Select & Execute menu options when button is pressed // Triggered by interrupts in rotary lib
 void rotaryButtonPressed(void){
-    updateScreen.detach();
-    nextStep.detach();
     BSP_LCD_Clear(LCD_COLOR_BLACK);
     switch(menuCounter){
         case 0:
+            updateScreen.detach();
+            nextStep.detach();
                 // Attatch ticker to this flag. Increments scan progress
             nextStep.attach(incrementScan, 20ms); // 50Hz
             break;
         case 1:
+            updateScreen.detach();
+            nextStep.detach();
                 // Attatch ticker to this flag. Redraws Object
             updateScreen.attach(draw3dObject, 20ms); // 50Hz
             spin = true;
             break;
         case 2:
+            updateScreen.detach();
+            nextStep.detach();
                 // Restore 3D object from save
             for(int i = 0; i < 8100; i++){
                 xArray[i] = xArraySAVE[i]; 
@@ -171,7 +146,7 @@ void rotaryButtonPressed(void){
             updateScreen.attach(manualRotation, 1ms); // 50Hz
             break;
         case 3:
-            //updateScreen.attach(drawDebugScreen, 20ms); // 50Hz
+            drawDebugFlag = !drawDebugFlag;
             break;
         default:    // should never happen
             BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Something went wrong (rotaryButtonPressed)", CENTER_MODE);
@@ -191,7 +166,6 @@ void rotaryTurned(void){
     BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
     switch(menuCounter){
         case 0:
-            BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
             BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Menu: Start Scan", CENTER_MODE);
             break;
         case 1:
@@ -230,8 +204,8 @@ void drawDepthMap(float distance, float angle, uint8_t layer, uint8_t range){
     uint16_t drawY = depthMapYoffset - layer;                                                     //(Z = cos(angle) * distance??? check maths before implementing)
     uint8_t red = utils.valmap(distance,0,range,0xFF,0x00);
     BSP_LCD_DrawPixel(drawX, drawY, utils.argbToHex(0xFF, red, 0x00, 0x00));
-    BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
         // Draw bounding box
+    BSP_LCD_SetTextColor(drawColour);
     BSP_LCD_DrawRect(depthMapXoffset - 1, depthMapYoffset - 91, 91, 91);
 }
 
@@ -247,29 +221,6 @@ void sensorUpdate(float distance, float angle, uint8_t layer, float rangePot){
     BSP_LCD_DisplayStringAt(0, LINE(0), (uint8_t *)&text, LEFT_MODE);
     drawRadarView(distance, angle);
     drawDepthMap(distance, angle, layer, rangeCutoff);
-}
-
-    // Project model defined in xyz arrays onto the LCD 
-void draw3dObject(void){
-    draw3dFlag = true;
-    rotateTouchFlag = false;
-    loadTestCube = false;
-}
-
-    // Take peripheral reading, then move servo & stepper to next position
-void incrementScan(void){
-    scanFlag = true;
-    spin = false;
-    rotateTouchFlag = false;
-    loadTestCube = false;
-}
-
-    // Rotate and draw object. Based on ts input.
-void manualRotation(void){
-    rotateTouchFlag = true;
-    spin = false;
-    scanFlag = false;
-    draw3dFlag = false;
 }
 
     // Rotate a cube around all 3 axis, 3d rendering demo for testing/debugging
@@ -329,6 +280,31 @@ void drawDebugCube(void){
     BSP_LCD_DrawLine(testObject.xProjected[5]+xOffset3d, testObject.yProjected[5]+yOffset3d, testObject.xProjected[6]+xOffset3d, testObject.yProjected[6]+yOffset3d);
     BSP_LCD_DrawLine(testObject.xProjected[6]+xOffset3d, testObject.yProjected[6]+yOffset3d, testObject.xProjected[7]+xOffset3d, testObject.yProjected[7]+yOffset3d);
     BSP_LCD_DrawLine(testObject.xProjected[7]+xOffset3d, testObject.yProjected[7]+yOffset3d, testObject.xProjected[4]+xOffset3d, testObject.yProjected[4]+yOffset3d);    
+}
+
+
+// ---------------------Flags set by Interrupts-------------------------------------------------------------------------
+    // Project model defined in xyz arrays onto the LCD 
+void draw3dObject(void){
+    draw3dFlag = true;
+    rotateTouchFlag = false;
+    loadTestCube = false;
+}
+
+    // Take peripheral reading, then move servo & stepper to next position
+void incrementScan(void){
+    scanFlag = true;
+    spin = false;
+    rotateTouchFlag = false;
+    loadTestCube = false;
+}
+
+    // Rotate and draw object. Based on ts input.
+void manualRotation(void){
+    rotateTouchFlag = true;
+    spin = false;
+    scanFlag = false;
+    draw3dFlag = false;
 }
 
 
@@ -455,7 +431,10 @@ int main(){
                 for(int j = 0; j<361; j++){
                     testObject.rotateProjection(j, rotationAxis);
                     testObject.generateProjected();
-                    BSP_LCD_Clear(LCD_COLOR_BLACK);
+                    while (!(LTDC->CDSR & LTDC_CDSR_VSYNCS)) {}     // Wait for v-sync. (Magic.)
+                    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+                    BSP_LCD_FillRect(80, 50, 320, 155);
+                    BSP_LCD_SetTextColor(drawColour);
                     for(int i = 0; i < 8099; i++){ // Connect each projected point to its neighbour
                         BSP_LCD_DrawLine(testObject.xProjected[i] +xOffset3d, testObject.yProjected[i] +yOffset3d, testObject.xProjected[i+1] +xOffset3d,testObject.yProjected[i+1] +yOffset3d);
                     }
@@ -472,13 +451,44 @@ int main(){
                 }
             }else{
                 testObject.generateProjected();
-                //BSP_LCD_Clear(LCD_COLOR_BLACK);
-                BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
+                BSP_LCD_SetTextColor(drawColour);
                 for(int i = 0; i < 8099; i++){ // Connect each projected point to its neighbour
                     BSP_LCD_DrawLine(testObject.xProjected[i] +xOffset3d, testObject.yProjected[i] +yOffset3d, testObject.xProjected[i+1] +xOffset3d,testObject.yProjected[i+1] +yOffset3d);
                 }
             }
             draw3dFlag = false;
+        }
+
+            // Draw debug information on top of current screen. Toggleable.
+        if(drawDebugFlag == true){
+            while (!(LTDC->CDSR & LTDC_CDSR_VSYNCS)) {}     // Wait for v-sync. (Magic.)
+            BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
+            char text [50];
+            sprintf((char*)text, "IR Distance: %.2f    Voltage: %.2f", IR.getDistance(), IR.readVoltage()); 
+            //BSP_LCD_ClearStringLine(2);
+            BSP_LCD_DisplayStringAt(0, LINE(2), (uint8_t *)&text, LEFT_MODE);
+            float potVal = rangePot.readVoltage();
+            sprintf((char*)text, "Range-Pot Distance: %d    Voltage: %.2f", utils.valmap(potVal, 0, 3.3, 0, 100), potVal); 
+            //BSP_LCD_ClearStringLine(3);
+            BSP_LCD_DisplayStringAt(0, LINE(3), (uint8_t *)&text, LEFT_MODE);
+            sprintf((char*)text, "Encoder Clockwise: %d", encoder.getClockwise()); 
+            //BSP_LCD_ClearStringLine(4);
+            BSP_LCD_DisplayStringAt(0, LINE(4), (uint8_t *)&text, LEFT_MODE);
+            sprintf((char*)text, "Servo Position: %.2f", servo.readPos());
+            //BSP_LCD_ClearStringLine(5);
+            BSP_LCD_DisplayStringAt(0, LINE(5), (uint8_t *)&text, LEFT_MODE);
+            sprintf((char*)text, "Scan Clockwise: %d    Angle: %d   Layer: %d", direction, desiredAngle, depthMapLayer);
+            //BSP_LCD_ClearStringLine(6);
+            BSP_LCD_DisplayStringAt(0, LINE(6), (uint8_t *)&text, LEFT_MODE);
+            sprintf((char*)text, "Radar Offset X: %d   Y: %d", radarXoffset, radarYoffset); 
+            //BSP_LCD_ClearStringLine(7);
+            BSP_LCD_DisplayStringAt(0, LINE(7), (uint8_t *)&text, LEFT_MODE);
+            sprintf((char*)text, "DepthMap Offset X: %d   Y: %d", depthMapXoffset, depthMapYoffset); 
+            //BSP_LCD_ClearStringLine(8);
+            BSP_LCD_DisplayStringAt(0, LINE(8), (uint8_t *)&text, LEFT_MODE);
+            sprintf((char*)text, "3D Array Index %d", pixelIndex); 
+            //BSP_LCD_ClearStringLine(8);
+            BSP_LCD_DisplayStringAt(0, LINE(9), (uint8_t *)&text, LEFT_MODE);
         }
     }
 }
