@@ -4,6 +4,10 @@
 
 #include "cstdint"
 
+namespace constants{
+    const double PI_DOUBLE = 3.14159265358979323846;   
+}
+
 class Utilities{
 public:
     // Maps a value in a given range, to its corresponding value in another given range

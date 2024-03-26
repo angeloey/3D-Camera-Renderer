@@ -1,19 +1,19 @@
 // Angelo Maoudis 14074479
-// Angelo irSense
+// Angelo IrSense
 #include "irSense.h"
 
-irSense::irSense(PinName sensorOut):voltIn(sensorOut){
+IrSense::IrSense(PinName sensorOut):voltIn(sensorOut){
     voltage = voltIn.read();
 }
 
     // Returns AnalogIn voltage on pin sensorOut
-float irSense::readVoltage(void){
+float IrSense::readVoltage(void){
     voltage = voltIn.read() * 3.3;
     return voltage;
 }
 
     // Returns last distance measured
-float irSense::lastDistance(void){
+float IrSense::lastDistance(void){
     return distance;
 }
 
@@ -25,7 +25,7 @@ float distanceMap (float value, float istart, float istop, float ostart, float o
 }
 
     // Returns distance in CM from IR sensor
-float irSense::getDistance(){
+float IrSense::getDistance(){
     readVoltage();
     if(voltage >= 2.3){                                 // crudely approximating from graph included in datasheet
         distance = distanceMap(voltage,2.3,3.2,10,5);   // have to if-elseif loads because relationship is non-linear

@@ -1,5 +1,7 @@
 // Angelo Maoudis 14074479
 // Angelo myStepper
+#pragma once
+
 #include "DigitalOut.h"
 #include "mbed.h"
 #include <cstdint>
@@ -44,8 +46,6 @@ public:
     void analogStep(float degrees);
 
 private:
-
-    const double pi = 3.14159;
 
     float _degrees;
 

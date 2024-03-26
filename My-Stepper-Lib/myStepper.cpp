@@ -1,5 +1,8 @@
 // Angelo Maoudis 14074479
 // Angelo myStepper
+#pragma once
+
+#include "myUtils.h"
 #include "myStepper.h"
 #include <cstdint>
 
@@ -171,8 +174,8 @@ float returnPositive(float input){
 
     // Adjusts AnalogOut values to reflect desired step position
 void microStepper::analogStep(float degrees){                    // Output across phases should look like this \/
-    _A1.write(returnPositive(sin(degrees * pi / 180)));                             //-''-....-''-......    A1
-    _A2.write(returnPositive(cos(degrees * pi / 180)));                             //..-''-....-''-....    A2
-    _B1.write(returnPositive(sin(180 + degrees * pi / 180)));                       //....-''-....-''-..    B1
-    _B2.write(returnPositive(cos(180 + degrees * pi / 180)));                       //......-''-....-''-    B2
+    _A1.write(returnPositive(sin(degrees * constants::PI_DOUBLE / 180)));                             //-''-....-''-......    A1
+    _A2.write(returnPositive(cos(degrees * constants::PI_DOUBLE / 180)));                             //..-''-....-''-....    A2
+    _B1.write(returnPositive(sin(180 + degrees * constants::PI_DOUBLE / 180)));                       //....-''-....-''-..    B1
+    _B2.write(returnPositive(cos(180 + degrees * constants::PI_DOUBLE / 180)));                       //......-''-....-''-    B2
 }

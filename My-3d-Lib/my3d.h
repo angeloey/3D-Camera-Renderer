@@ -9,24 +9,35 @@
 
 #define MAX_VERTICES 8100   // 90x90
 
-class Object3d {
+class Object3D {
 public:
         // Initialize a 3d object with arrays containing x y and z coordinates, 90x90 scan
-    Object3d(float focalLength);
+    Object3D(float focalLength);
+
+        // Stores whatever is in the current vertices buffer, to the verticesSAVE struct
+        // Returns true
+    bool saveVertices(void);
+
+        // Overwrites current vertices buffer, with values in verticesSAVE struct.
+        // Returns true
+    bool restoreSave(void);
 
         // Generate Projected Coordinates
     void generateProjected(void);
 
-        // Modify original coordinates, rotating around an axis
+        // Modify contents of vertices buffer, rotating around an axis
     void rotateVertices(float angle, uint8_t axis); // 0 = X axis, 1 = Y axis, 2 = Z axis
 
-    float xProjected[8100];     // Array Containing xProjected Coordinates
-    float yProjected[8100];     // Array Containing yProjected Coordinates
+        // Arrays Containing Projected Coordinates
+    float xProjected[MAX_VERTICES]; 
+    float yProjected[MAX_VERTICES];
 
-    float _focalLength;         // Focal Length, i.e camera distance *in context of weak perspective projection
+        // Focal Length, i.e camera distance *in context of weak perspective projection
+    float _focalLength;                 
 
-    struct{                     // Struct xyz coordinates of each Vertex.
-        float x[MAX_VERTICES];  // Also used to store a copy, to restore.
+        // Vertices struct: buffer & save/restore point.
+    struct{                     
+        float x[MAX_VERTICES];  // xyz coordinates of each Vertex.
         float y[MAX_VERTICES];
         float z[MAX_VERTICES];
     }vertices, verticesSAVE;
@@ -41,10 +52,7 @@ private:
         // Calculate yProjected based on Z coord
     int16_t raycastY(float yCoord, float zCoord); 
 
-    float _xRotated; // used to temporarily store XYZ coordinates AFTER rotation
-    float _yRotated; // so that modified values are not used in the subsequent operation
-    float _zRotated; // when rotating around an axis (SEE rotateProjection in .cpp)
-
-    const double pi = 3.14159265359;
-    
+    float _xRotated;    // temporary buffer to store XYZ coordinates AFTER rotation
+    float _yRotated;    // so that modified values are not used in the subsequent operation
+    float _zRotated;    // when rotating around an axis (SEE rotateVertices in .cpp)    
 };

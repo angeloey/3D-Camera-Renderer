@@ -1,10 +1,10 @@
 // Angelo Maoudis 14074479
-// Angelo irSense
+// Angelo IrSense
 #include "mbed.h"
 
-class irSense{
+class IrSense{
 public:
-    irSense(PinName sensorOut);
+    IrSense(PinName sensorOut);
 
     // Returns AnalogIn voltage on pin sensorOut
     float readVoltage();
