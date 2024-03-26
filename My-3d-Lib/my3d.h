@@ -21,6 +21,8 @@ public:
     float xProjected[8100]; // Array Containing xProjected Coordinates
     float yProjected[8100]; // Array Containing yProjected Coordinates
 
+    float _focalLength; // Focal Length, i.e camera distance *in context of weak perspective projection
+
 private:
         // Calculate xProjected based on Z coord
     int16_t getXProjected(float xCoord, float zCoord); 
@@ -35,8 +37,6 @@ private:
     float _xRotated; // used to temporarily store XYZ coordinates AFTER rotation
     float _yRotated; // so that modified values are not used in the subsequent operation
     float _zRotated; // when rotating around an axis (SEE rotateProjection in .cpp)
-
-    float _focalLength; // Focal Length, i.e camera distance *in context of weak perspective projection
 
     const double pi = 3.14159265359;
     
