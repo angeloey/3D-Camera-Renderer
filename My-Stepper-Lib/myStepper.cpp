@@ -134,7 +134,7 @@ void Stepper::jumpToStep(uint8_t stepMode){
 
 
     // Stepper constructor for microstep mode
-microStepper::microStepper(PinName A1, PinName A2, PinName B1, PinName B2, float stepSize):_A1(A1), _A2(A2), _B1(B1), _B2(B2){
+MicroStepper::MicroStepper(PinName A1, PinName A2, PinName B1, PinName B2, float stepSize):_A1(A1), _A2(A2), _B1(B1), _B2(B2){
     _degrees = 0;
     _A1.write(0);
     _A2.write(0);
@@ -143,7 +143,7 @@ microStepper::microStepper(PinName A1, PinName A2, PinName B1, PinName B2, float
 }
 
     // Steps forward x times through microsteps at x resolution
-void microStepper::step(uint8_t clockwise, uint16_t steps, float resolution){
+void MicroStepper::step(uint8_t clockwise, uint16_t steps, float resolution){
     if(clockwise == 0){
         for(uint16_t i = 0; i < steps; i++){
             _degrees += resolution;
@@ -173,7 +173,7 @@ float returnPositive(float input){
 }
 
     // Adjusts AnalogOut values to reflect desired step position
-void microStepper::analogStep(float degrees){                    // Output across phases should look like this \/
+void MicroStepper::analogStep(float degrees){                    // Output across phases should look like this \/
     _A1.write(returnPositive(sin(degrees * constants::PI_DOUBLE / 180)));                             //-''-....-''-......    A1
     _A2.write(returnPositive(cos(degrees * constants::PI_DOUBLE / 180)));                             //..-''-....-''-....    A2
     _B1.write(returnPositive(sin(180 + degrees * constants::PI_DOUBLE / 180)));                       //....-''-....-''-..    B1

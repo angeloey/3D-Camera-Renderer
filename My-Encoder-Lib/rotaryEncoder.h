@@ -1,5 +1,7 @@
 // Angelo Maoudis 14074479
 // Angelo rotaryEncoder
+#pragma once
+
 #include "PinNames.h"
 #include "mbed.h"
 #include <cstdint>
@@ -27,9 +29,9 @@ private:
 
     InterruptIn _button;
 
-    int8_t currentState;
+    int8_t _currentState;
 
-    int8_t lastState;
+    int8_t _lastState;
 
-    bool clockwise;
+    bool _clockwise;
 };

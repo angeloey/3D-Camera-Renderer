@@ -17,15 +17,15 @@ float servoMap (float value, float istart, float istop, float ostart, float osto
 
     // Returns servo motors position in degrees
 float Servo::readPos() {
-    return positionDegrees;
+    return _positionDegrees;
 }
 
     // Sets new servo motor position. PWM output at pulsewidth corresponding to desired position.
     // Achieved by mapping the value "newPos" in range 0 -> _servoRange (degrees)
     // to its equivalent value in the range _servoTimeStart -> _servoTimeEnd (uSeconds).
 void Servo::writePos(float newPos) {
-    positionDegrees = newPos;
-    position = servoMap(newPos, 0, _servoRange, (_servoTimeStart * 1000), (_servoTimeEnd * 1000));    // map: 0 -> _servoRange in degrees, to: _servoTimeStart -> _servoTimeEnd in uSeconds.
-    pwm.pulsewidth_us(position);
+    _positionDegrees = newPos;
+    _position = servoMap(newPos, 0, _servoRange, (_servoTimeStart * 1000), (_servoTimeEnd * 1000));    // map: 0 -> _servoRange in degrees, to: _servoTimeStart -> _servoTimeEnd in uSeconds.
+    pwm.pulsewidth_us(_position);
 }
 

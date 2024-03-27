@@ -5,7 +5,7 @@
 #include <cstdio>
 
 Rotary::Rotary(PinName encoderA, PinName encoderB, PinName button, Callback<void(void)> buttonFunc, Callback<void(void)> turnFunc):_encoderA(encoderA),_encoderB(encoderB),_button(button),func(turnFunc){
-    clockwise = false;
+    _clockwise = false;
     _encoderA.mode(PullDown);
     _encoderB.mode(PullDown);
     _button.mode(PullDown);
@@ -24,21 +24,21 @@ Rotary::Rotary(PinName encoderA, PinName encoderB, PinName button, Callback<void
 void Rotary::solveEncoder(void){
     uint8_t chanA = _encoderA.read(); // read channel A and B
     uint8_t chanB = _encoderB.read();
-    currentState = (chanA << 1) | (chanB); // storing states of A and B //2bit
+    _currentState = (chanA << 1) | (chanB); // storing states of A and B //2bit
 
     //11->00->11->00 is CCW
     //10->01->10->01 is CW
-    if((lastState == 0b11 && currentState == 0b00)||(lastState == 0b00 && currentState == 0b11)){
-        clockwise = false;
+    if((_lastState == 0b11 && _currentState == 0b00)||(_lastState == 0b00 && _currentState == 0b11)){
+        _clockwise = false;
         func();
-    }else if((lastState == 0b10 && currentState == 0b01)||(lastState == 0b01 && currentState == 0b10)){
-        clockwise = true;
+    }else if((_lastState == 0b10 && _currentState == 0b01)||(_lastState == 0b01 && _currentState == 0b10)){
+        _clockwise = true;
         func();
     }
-    lastState = currentState;
+    _lastState = _currentState;
 }
 
     // Returns direction most recently turned, CW = true, CCW = false
 bool Rotary::getClockwise(void){
-    return clockwise;
+    return _clockwise;
 }

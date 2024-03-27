@@ -5,7 +5,7 @@
 #include "stm32746g_discovery_ts.h"
 
     // Normal touch button
-Button::Button(uint16_t xMin, uint16_t xMax, uint16_t yMin, uint16_t yMax, uint32_t colour, uint32_t symbolColour, uint8_t buttonType, TS_StateTypeDef& touchState):_xMin(xMin), _xMax(xMax), _yMin(yMin), _yMax(yMax), _colour(colour), _symbolColour(symbolColour), _buttonType(buttonType){
+Button::Button(uint16_t xMin, uint16_t xMax, uint16_t yMin, uint16_t yMax, uint32_t colour, uint32_t symbolColour, uint8_t buttonType, TS_StateTypeDef& TouchState):_xMin(xMin), _xMax(xMax), _yMin(yMin), _yMax(yMax), _colour(colour), _symbolColour(symbolColour), _buttonType(buttonType){
 
         // Define points for drawing shapes between. Used to draw symbols on different button types
         // Up facing arrow
@@ -74,10 +74,10 @@ void Button::drawButton(){
 
     // Return true if the screen is touched within the buttons coordinates
 bool Button::isPressed(void){
-    BSP_TS_GetState(&touchState);
-            if (touchState.touchDetected) {            
-                for(uint8_t i = 0; i < touchState.touchDetected; i++){  
-                    if (touchState.touchX[i] >= _xMin && touchState.touchX[i] <= _xMax && touchState.touchY[i] >= _yMin && touchState.touchY[i] <= _yMax) {
+    BSP_TS_GetState(&TouchState);
+            if (TouchState.touchDetected) {            
+                for(uint8_t i = 0; i < TouchState.touchDetected; i++){  
+                    if (TouchState.touchX[i] >= _xMin && TouchState.touchX[i] <= _xMax && TouchState.touchY[i] >= _yMin && TouchState.touchY[i] <= _yMax) {
                         _isPressed = true;
                     }
                 }
@@ -91,7 +91,7 @@ bool Button::isPressed(void){
 
 
     // Sliding touch button
-Slider::Slider(uint16_t xMin, uint16_t xMax, uint16_t yMin, uint16_t yMax, uint32_t colour, uint32_t symbolColour, uint8_t buttonType, TS_StateTypeDef& touchstate, bool horizontal, uint16_t trackStart, uint16_t trackEnd):_xMin(xMin), _xMax(xMax), _yMin(yMin), _yMax(yMax), _colour(colour), _symbolColour(symbolColour), _buttonType(buttonType), _horizontal(horizontal), _trackStart(trackStart), _trackEnd(trackEnd){
+Slider::Slider(uint16_t xMin, uint16_t xMax, uint16_t yMin, uint16_t yMax, uint32_t colour, uint32_t symbolColour, uint8_t buttonType, TS_StateTypeDef& TouchState, bool horizontal, uint16_t trackStart, uint16_t trackEnd):_xMin(xMin), _xMax(xMax), _yMin(yMin), _yMax(yMax), _colour(colour), _symbolColour(symbolColour), _buttonType(buttonType), _horizontal(horizontal), _trackStart(trackStart), _trackEnd(trackEnd){
 
         // Define points for drawing shapes between. Used to draw symbols on different button types
         // Up facing arrow
@@ -180,24 +180,24 @@ float valMap (float value, float istart, float istop, float ostart, float ostop)
 
     // Return true if the screen is touched within the buttons coordinates
 bool Slider::isPressed(void){
-    BSP_TS_GetState(&touchState);
+    BSP_TS_GetState(&TouchState);
                 // Move Slider as it is dragged
-            if (touchState.touchDetected) {
-                for(uint8_t i = 0; i < touchState.touchDetected; i++){          
-                    if (touchState.touchX[i] >= _xMin && touchState.touchX[i] <= _xMax && touchState.touchY[i] >= _yMin && touchState.touchY[i] <= _yMax) {
+            if (TouchState.touchDetected) {
+                for(uint8_t i = 0; i < TouchState.touchDetected; i++){          
+                    if (TouchState.touchX[i] >= _xMin && TouchState.touchX[i] <= _xMax && TouchState.touchY[i] >= _yMin && TouchState.touchY[i] <= _yMax) {
                         BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
                         BSP_LCD_FillRect(_xMin -1, _yMin -1, ((_xMax +1) - (_xMin -1)), ((_yMax +1) - (_yMin -1)));
                         if(_horizontal){
                             int mid = (_xMax - _xMin)/2;
-                            _xMin = touchState.touchX[i] - mid;
-                            _xMax = touchState.touchX[i] + mid;
-                            _sliderOut = valMap((uint16_t)touchState.touchX[i], _trackStart, _trackEnd, 0, 100);
+                            _xMin = TouchState.touchX[i] - mid;
+                            _xMax = TouchState.touchX[i] + mid;
+                            sliderOut = valMap((uint16_t)TouchState.touchX[i], _trackStart, _trackEnd, 0, 100);
 
                         }else{
                             int mid = (_yMax - _yMin)/2;
-                            _yMin = touchState.touchY[i] - mid;
-                            _yMax = touchState.touchY[i] + mid;
-                            _sliderOut = valMap((uint16_t)touchState.touchY[i], _trackStart, _trackEnd, 0, 100);
+                            _yMin = TouchState.touchY[i] - mid;
+                            _yMax = TouchState.touchY[i] + mid;
+                            sliderOut = valMap((uint16_t)TouchState.touchY[i], _trackStart, _trackEnd, 0, 100);
                         }
                         drawButton();
                         _isPressed = true;

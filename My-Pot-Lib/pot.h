@@ -1,5 +1,7 @@
 // Angelo Maoudis 14074479
 // Angelo Potentiometer
+#pragma once
+
 #include "mbed.h"
 
 class Pot{
@@ -13,7 +15,7 @@ public:
     float getLastReading();
     
 private:
-    float voltage;
+    float _voltage;
 
-    AnalogIn voltIn;
+    AnalogIn _voltIn;
 };

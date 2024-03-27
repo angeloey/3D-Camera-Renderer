@@ -1,5 +1,7 @@
 // Angelo Maoudis 14074479
 // Angelo my3d
+#pragma once
+
 #include "mbed.h"
 #include <cstdint>
 #include <stdint.h>
@@ -14,18 +16,18 @@ public:
         // Initialize a 3d object with arrays containing x y and z coordinates, 90x90 scan
     Object3D(float focalLength);
 
-        // Stores whatever is in the current vertices buffer, to the verticesSAVE struct
+        // Stores whatever is in the current Vertices buffer, to the VerticesSAVE struct
         // Returns true
     bool saveVertices(void);
 
-        // Overwrites current vertices buffer, with values in verticesSAVE struct.
+        // Overwrites current Vertices buffer, with values in VerticesSAVE struct.
         // Returns true
     bool restoreSave(void);
 
         // Generate Projected Coordinates
     void generateProjected(void);
 
-        // Modify contents of vertices buffer, rotating around an axis
+        // Modify contents of Vertices buffer, rotating around an axis
     void rotateVertices(float angle, uint8_t axis); // 0 = X axis, 1 = Y axis, 2 = Z axis
 
         // Arrays Containing Projected Coordinates
@@ -33,14 +35,14 @@ public:
     float yProjected[MAX_VERTICES];
 
         // Focal Length, i.e camera distance *in context of weak perspective projection
-    float _focalLength;                 
+    float focalLength;                 
 
         // Vertices struct: buffer & save/restore point.
     struct{                     
         float x[MAX_VERTICES];  // xyz coordinates of each Vertex.
         float y[MAX_VERTICES];
         float z[MAX_VERTICES];
-    }vertices, verticesSAVE;
+    }Vertices, VerticesSAVE;
     // General consensus online: multiple 1D arrays are faster than a multi-dimensional array, save for minimal gains in edge cases.
     // Decision: Prioritize readibility and use 1D array approach
     // Solution: Struct of 1D arrays! Readible, Encapsulated, AND Fast! 

@@ -1,5 +1,7 @@
 // Angelo Maoudis 14074479
 // Angelo IrSense
+#pragma once
+
 #include "mbed.h"
 
 class IrSense{
@@ -16,9 +18,9 @@ public:
     float lastDistance();
     
 private:
-    float distance;
+    float _distance;
     
-    float voltage;
+    float _voltage;
 
-    AnalogIn voltIn;
+    AnalogIn _voltIn;
 };

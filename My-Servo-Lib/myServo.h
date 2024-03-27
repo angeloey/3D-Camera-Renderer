@@ -1,5 +1,7 @@
 // Angelo Maoudis 14074479
 // Angelo myServo
+#pragma once
+
 #include "mbed.h"
 
 class Servo {
@@ -24,7 +26,7 @@ private:
 
     float _servoTimeEnd;
 
-    float position;
+    float _position;
 
-    float positionDegrees;
+    float _positionDegrees;
 };

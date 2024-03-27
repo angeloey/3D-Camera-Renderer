@@ -35,9 +35,9 @@ private:
     DigitalOut _B2;
 };
 
-class microStepper { // Microstepping Stepper Motor
+class MicroStepper { // Microstepping Stepper Motor
 public:
-    microStepper(PinName A1, PinName A2, PinName B1, PinName B2, float stepSize);
+    MicroStepper(PinName A1, PinName A2, PinName B1, PinName B2, float stepSize);
 
     // Steps forward x times through microsteps at x resolution
     void step(uint8_t clockwise, uint16_t steps, float resolution);
