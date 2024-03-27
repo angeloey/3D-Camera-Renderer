@@ -4,7 +4,7 @@
 
     // Maps a value in a given range, to its corresponding value in another given range
     // Returns a mapped value of the input, from one numerical range to another.
-int Utilities::valmap (float value, float istart, float istop, float ostart, float ostop){
+int Utilities::valMap (float value, float istart, float istop, float ostart, float ostop){
     uint16_t mappedVal = ostart + (ostop - ostart) * ((value - istart) / (istop - istart));
     return mappedVal;
 }

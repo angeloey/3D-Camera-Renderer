@@ -12,7 +12,7 @@ class Utilities{
 public:
     // Maps a value in a given range, to its corresponding value in another given range
     // Returns mapped value
-    int valmap (float value, float istart, float istop, float ostart, float ostop);
+    int valMap (float value, float istart, float istop, float ostart, float ostop);
 
     // LCD wants colour in format 0xAARRGGBB, i.e 0xFFFFFFFF = white & 0xFF000000 = black etc.
     // Returns Hex code corresponding to given Alpha, Red, Green, & Blue Channels

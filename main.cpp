@@ -190,7 +190,7 @@ void drawRadarView(float irDistance, float scanAngle){
 void drawDepthMap(float irDistance, float scanAngle, uint8_t scanLayer, uint8_t maxRange){ 
     uint16_t drawX = (scanAngle) + constants::OFFSET_DEPTHMAP_X; //0-90deg from left = x coord 0 to 90 from offset //TODO: "normalise" the image so it isnt skewed 
     uint16_t drawY = constants::OFFSET_DEPTHMAP_Y - scanLayer;                                                     //(Z = cos(angle) * distance??? check maths before implementing)
-    uint8_t redBrightness = Utils.valmap(irDistance, 0, maxRange, 0xFF, 0x00);
+    uint8_t redBrightness = Utils.valMap(irDistance, 0, maxRange, 0xFF, 0x00);
     BSP_LCD_DrawPixel(drawX, drawY, Utils.argbToHex(0xFF, redBrightness, 0x00, 0x00));
         // Draw bounding box
     BSP_LCD_SetTextColor(drawColour);
@@ -200,7 +200,7 @@ void drawDepthMap(float irDistance, float scanAngle, uint8_t scanLayer, uint8_t 
     // Updates draw functions with peripheral data & calls them
 void updatePeripherals(float currentIrDistance, float currentScanAngle, uint8_t currentScanLayer, float currentPotReading){
         // Cap distance values via pot. Scales brightness in function "drawDepthMap"
-    rangeCutoff = Utils.valmap(currentPotReading, 0, 3.3, 0, 100);
+    rangeCutoff = Utils.valMap(currentPotReading, 0, 3.3, 0, 100);
     if(currentIrDistance > rangeCutoff) {currentIrDistance = rangeCutoff; }
     char text [64];
          // Clear line. Display scan progress. Draw 2D views
@@ -332,16 +332,16 @@ int main(){
                 // Choose object colour via slider.
             SliderDrawColour.isPressed();
             if(SliderDrawColour.sliderOut <= 33){
-                redArgb = Utils.valmap(SliderDrawColour.sliderOut, 0, 33, 0x00, 0xFF);
-                greenArgb = Utils.valmap(SliderDrawColour.sliderOut, 0, 33, 0xFF, 0x00);
+                redArgb = Utils.valMap(SliderDrawColour.sliderOut, 0, 33, 0x00, 0xFF);
+                greenArgb = Utils.valMap(SliderDrawColour.sliderOut, 0, 33, 0xFF, 0x00);
                 drawColour = Utils.argbToHex(0xFF, redArgb, greenArgb, blueArgb);
             }else if(SliderDrawColour.sliderOut <= 66){
-                greenArgb = Utils.valmap(SliderDrawColour.sliderOut, 0, 33, 0x00, 0xFF);
-                blueArgb = Utils.valmap(SliderDrawColour.sliderOut, 0, 33, 0xFF, 0x00);
+                greenArgb = Utils.valMap(SliderDrawColour.sliderOut, 0, 33, 0x00, 0xFF);
+                blueArgb = Utils.valMap(SliderDrawColour.sliderOut, 0, 33, 0xFF, 0x00);
                 drawColour = Utils.argbToHex(0xFF, redArgb, greenArgb, blueArgb);
             }else if(SliderDrawColour.sliderOut <= 100){
-                blueArgb = Utils.valmap(SliderDrawColour.sliderOut, 0, 33, 0x00, 0xFF);
-                redArgb = Utils.valmap(SliderDrawColour.sliderOut, 0, 33, 0xFF, 0x00);
+                blueArgb = Utils.valMap(SliderDrawColour.sliderOut, 0, 33, 0x00, 0xFF);
+                redArgb = Utils.valMap(SliderDrawColour.sliderOut, 0, 33, 0xFF, 0x00);
                 drawColour = Utils.argbToHex(0xFF, redArgb, greenArgb, blueArgb);
             }
                 // Generate coordinates, Clear Object, Draw image. (Only clear immidiately before drawing to reduce strobing)
@@ -436,7 +436,7 @@ int main(){
             //BSP_LCD_ClearStringLine(2);
             BSP_LCD_DisplayStringAt(0, LINE(2), (uint8_t *)&text, LEFT_MODE);
             float potVal = RangePot.readVoltage();
-            sprintf((char*)text, "Range-Pot Distance: %d    Voltage: %.2f", Utils.valmap(potVal, 0, 3.3, 0, 100), potVal); 
+            sprintf((char*)text, "Range-Pot Distance: %d    Voltage: %.2f", Utils.valMap(potVal, 0, 3.3, 0, 100), potVal); 
             //BSP_LCD_ClearStringLine(3);
             BSP_LCD_DisplayStringAt(0, LINE(3), (uint8_t *)&text, LEFT_MODE);
             sprintf((char*)text, "Encoder Clockwise: %d", Encoder.getClockwise()); 
