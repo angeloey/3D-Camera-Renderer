@@ -9,7 +9,9 @@
 // good explanation of 3d rendering (minecraft video lol):
 // https://www.youtube.com/watch?v=hFRlnNci3Rs
 
-#define MAX_VERTICES 8100   // 90x90
+namespace constants{
+constexpr int16_t MAX_VERTICES = 8100;   // 90x90
+}
 
 class Object3D {
 public:
@@ -31,17 +33,17 @@ public:
     void rotateVertices(float angle, uint8_t axis); // 0 = X axis, 1 = Y axis, 2 = Z axis
 
         // Arrays Containing Projected Coordinates
-    float xProjected[MAX_VERTICES]; 
-    float yProjected[MAX_VERTICES];
+    float xProjected[constants::MAX_VERTICES]; 
+    float yProjected[constants::MAX_VERTICES];
 
         // Focal Length, i.e camera distance *in context of weak perspective projection
     float focalLength;                 
 
         // Vertices struct: buffer & save/restore point.
     struct{                     
-        float x[MAX_VERTICES];  // xyz coordinates of each Vertex.
-        float y[MAX_VERTICES];
-        float z[MAX_VERTICES];
+        float x[constants::MAX_VERTICES];  // xyz coordinates of each Vertex.
+        float y[constants::MAX_VERTICES];
+        float z[constants::MAX_VERTICES];
     }Vertices, VerticesSAVE;
     // General consensus online: multiple 1D arrays are faster than a multi-dimensional array, save for minimal gains in edge cases.
     // Decision: Prioritize readibility and use 1D array approach

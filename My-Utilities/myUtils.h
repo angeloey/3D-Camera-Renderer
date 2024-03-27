@@ -5,7 +5,7 @@
 #include "cstdint"
 
 namespace constants{
-    const double PI_DOUBLE = 3.14159265358979323846;   
+    constexpr double PI_DOUBLE = 3.14159265358979323846;   
 }
 
 class Utilities{

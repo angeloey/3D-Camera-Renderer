@@ -13,7 +13,20 @@
 #include "my3d.h"
 #include "myButtons.h"
 
-    //Function declarations
+    // Magic Numbers / Constants
+namespace constants{
+        // Menu/Option Constants
+    constexpr int8_t MAX_MENU_ENTRIES = 4;
+        // Offsets/Coordinates for drawing on LCD
+    constexpr uint8_t OFFSET_3D_X = 240;         // Offsets for drawing 3D object centred on (0,0) which is at the top left of the LCD.
+    constexpr uint8_t OFFSET_3D_Y = 127;
+    constexpr uint8_t OFFSET_RADAR_X = 110;      // Position offsets for drawing radar view.
+    constexpr uint8_t OFFSET_RADAR_Y = 202;
+    constexpr uint16_t OFFSET_DEPTHMAP_X = 310;  // Position offsets for drawing depth map.
+    constexpr uint8_t OFFSET_DEPTHMAP_Y = 202;
+}
+
+    // Function declarations
 void incrementScan(void);
 void drawRadarView(float distance, float angle);
 void drawDepthMap(float irDistance, float scanAngle, uint8_t scanLayer, uint8_t maxRange);
@@ -25,25 +38,15 @@ void rotatingCubeDemo(void);
 void drawDebugCube(void);
 void manualRotation(void);
 
-    // Offsets/Coordinates for drawing on LCD
-uint8_t xOffset3d = 240;        // Offsets for drawing 3D object centred on (0,0) which is at the top left of the LCD.
-uint8_t yOffset3d = 127;
-uint16_t radarXoffset = 110;    // Position offsets for drawing radar view.
-uint16_t radarYoffset = 202;
-uint16_t depthMapXoffset = 310; // Position offsets for drawing depth map.
-uint16_t depthMapYoffset = 202;
-uint16_t lastX;                 // Coordinates of last drawn line for radar view, used to overwrite in black without clearing entire radar.
-uint16_t lastY;                 // purely cosmetic.
-
     // Obtaining XYZ values via scan
 bool scanningClockwise = false; // Scan direction: False = CCW(-X), True = CW(+X) 
-int16_t desiredScanAngle = 0;   // Scan/Stepper angle (Horizontal/X Axis)
+uint8_t desiredScanAngle = 0;   // Scan/Stepper angle (Horizontal/X Axis)
 uint8_t depthMapLayer = 0;      // Y value/layer of depthmap, also used for Servo angle (Vertical/Y Axis)
 uint8_t rangeCutoff = 100;      // Any distances sensed past this value, are capped to this value (Depth/Z Axis)
 
     // Flags, mostly for executing functions incompatible with ISR (mutex, too slow, etc.)
-bool scanFlag = false;          // Scan object flag, progress through 3D scan when this flag is set.
-bool draw3dFlag = false;        // Draw 3D object when this flag is set.
+bool progressScanFlag = false;  // Scan object flag, progress through 3D scan when this flag is set.
+bool draw3dObjectFlag = false;  // Draw 3D object when this flag is set.
 bool spinRenderFlag = false;    // Rotate 3D object automatically when this flag is set.
 bool rotateTouchFlag = false;   // Enable touch buttons flag.
 bool loadTestCubeFlag = true;   // Until this flag is un-set, 3D renderer draws a tri-coloured cube.
@@ -59,6 +62,8 @@ uint32_t drawColour = LCD_COLOR_YELLOW; // This is modified by SliderDrawColour.
 uint8_t redArgb = 0xFF;                            
 uint8_t greenArgb = 0xFF;                // ARGB values, used to cycle through ARGB spectrum via slider. Alpha is always 0xFF when these are used
 uint8_t blueArgb = 0xFF;                 // Default is 0xFF (255) (white)
+uint16_t lastX;                          // Coordinates of last drawn line for radar view, used to overwrite in black without clearing entire radar.
+uint16_t lastY;                          // purely cosmetic.
 
     // Initialization, Peripheral Objects/Structs.
 IrSense IR(A0);                                     // initialize IR sensor, reading from Pin A0
@@ -140,10 +145,10 @@ void rotaryButtonPressed(void){
     // Scroll through menu when Encoder is turned
 void rotaryTurned(void){
     (Encoder.getClockwise() == true) ? menuCounter++ : menuCounter--;
-    if(menuCounter > 3){
+    if(menuCounter >= constants::MAX_MENU_ENTRIES){
         menuCounter = 0; 
     }else if(menuCounter < 0){
-        menuCounter = 3;
+        menuCounter = constants::MAX_MENU_ENTRIES;
     }
     BSP_LCD_ClearStringLine(1);
     BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
@@ -169,27 +174,27 @@ void rotaryTurned(void){
     // Draw radar representaion of current scan (X&Z progress along each Y layer)
 void drawRadarView(float irDistance, float scanAngle){ 
     BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-    BSP_LCD_DrawLine(radarXoffset, radarYoffset, lastX + radarXoffset, lastY + radarYoffset); // overwrite last drawn line in black
+    BSP_LCD_DrawLine(constants::OFFSET_RADAR_X, constants::OFFSET_RADAR_Y, lastX + constants::OFFSET_RADAR_X, lastY + constants::OFFSET_RADAR_Y); // overwrite last drawn line in black
     uint16_t x = irDistance * cos(constants::PI_DOUBLE * 2 * (scanAngle + 225) / 360); 
     uint16_t y = irDistance * sin(constants::PI_DOUBLE * 2 * (scanAngle + 225) / 360); // find x,y coords of a point on a circle, of radius 'distance' at angle 'angle'
     BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
-    BSP_LCD_DrawLine(radarXoffset, radarYoffset, x + radarXoffset, y + radarYoffset); // draw a line from radar offset, to x,y + offset
+    BSP_LCD_DrawLine(constants::OFFSET_RADAR_X, constants::OFFSET_RADAR_Y, x + constants::OFFSET_RADAR_X, y + constants::OFFSET_RADAR_Y); // draw a line from radar offset, to x,y + offset
     BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
-    BSP_LCD_DrawCircle(x + radarXoffset, y + radarYoffset, 1); // mark the end of the line with a yellow blob
-    BSP_LCD_DrawLine(x + radarXoffset, y + radarYoffset, lastX + radarXoffset, lastY + radarYoffset); // connect the blobs
+    BSP_LCD_DrawCircle(x + constants::OFFSET_RADAR_X, y + constants::OFFSET_RADAR_Y, 1); // mark the end of the line with a yellow blob
+    BSP_LCD_DrawLine(x + constants::OFFSET_RADAR_X, y + constants::OFFSET_RADAR_Y, lastX + constants::OFFSET_RADAR_X, lastY + constants::OFFSET_RADAR_Y); // connect the blobs
     lastX = x; // store last used x,y values
     lastY = y;
 }
 
     // Draw 2D image with depth data. Closer distance = brighter pixel
 void drawDepthMap(float irDistance, float scanAngle, uint8_t scanLayer, uint8_t maxRange){ 
-    uint16_t drawX = (scanAngle) + depthMapXoffset; //0-90deg from left = x coord 0 to 90 from offset //TODO: "normalise" the image so it isnt skewed 
-    uint16_t drawY = depthMapYoffset - scanLayer;                                                     //(Z = cos(angle) * distance??? check maths before implementing)
+    uint16_t drawX = (scanAngle) + constants::OFFSET_DEPTHMAP_X; //0-90deg from left = x coord 0 to 90 from offset //TODO: "normalise" the image so it isnt skewed 
+    uint16_t drawY = constants::OFFSET_DEPTHMAP_Y - scanLayer;                                                     //(Z = cos(angle) * distance??? check maths before implementing)
     uint8_t redBrightness = Utils.valmap(irDistance, 0, maxRange, 0xFF, 0x00);
     BSP_LCD_DrawPixel(drawX, drawY, Utils.argbToHex(0xFF, redBrightness, 0x00, 0x00));
         // Draw bounding box
     BSP_LCD_SetTextColor(drawColour);
-    BSP_LCD_DrawRect(depthMapXoffset - 1, depthMapYoffset - 91, 91, 91);
+    BSP_LCD_DrawRect(constants::OFFSET_DEPTHMAP_X - 1, constants::OFFSET_DEPTHMAP_Y - 91, 91, 91);
 }
 
     // Updates draw functions with peripheral data & calls them
@@ -219,7 +224,7 @@ void rotatingCubeDemo(void){
     Render3D.Vertices.x[7] = -40; Render3D.Vertices.y[7] = 40; Render3D.Vertices.z[7] = -40;  // back top left
     Render3D.saveVertices();
         // Display the cube at every angle from 0 to 360 along an axis.
-    for(int j = 0; j<361; j++){
+    for(int j = 0; j < 360; j++){
         Render3D.rotateVertices(j, rotationAxis);
         Render3D.generateProjected();
         drawDebugCube();
@@ -240,34 +245,34 @@ void drawDebugCube(void){
     BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
     BSP_LCD_FillRect(80, 50, 320, 155);
     BSP_LCD_SetTextColor(LCD_COLOR_RED);    // Edges connecting front and rear faces
-    BSP_LCD_DrawLine(Render3D.xProjected[7]+xOffset3d, Render3D.yProjected[7]+yOffset3d, Render3D.xProjected[3]+xOffset3d, Render3D.yProjected[3]+yOffset3d);
-    BSP_LCD_DrawLine(Render3D.xProjected[6]+xOffset3d, Render3D.yProjected[6]+yOffset3d, Render3D.xProjected[2]+xOffset3d, Render3D.yProjected[2]+yOffset3d);
-    BSP_LCD_DrawLine(Render3D.xProjected[4]+xOffset3d, Render3D.yProjected[4]+yOffset3d, Render3D.xProjected[0]+xOffset3d, Render3D.yProjected[0]+yOffset3d);
-    BSP_LCD_DrawLine(Render3D.xProjected[5]+xOffset3d, Render3D.yProjected[5]+yOffset3d, Render3D.xProjected[1]+xOffset3d, Render3D.yProjected[1]+yOffset3d);
+    BSP_LCD_DrawLine(Render3D.xProjected[7]+constants::OFFSET_3D_X, Render3D.yProjected[7]+constants::OFFSET_3D_Y, Render3D.xProjected[3]+constants::OFFSET_3D_X, Render3D.yProjected[3]+constants::OFFSET_3D_Y);
+    BSP_LCD_DrawLine(Render3D.xProjected[6]+constants::OFFSET_3D_X, Render3D.yProjected[6]+constants::OFFSET_3D_Y, Render3D.xProjected[2]+constants::OFFSET_3D_X, Render3D.yProjected[2]+constants::OFFSET_3D_Y);
+    BSP_LCD_DrawLine(Render3D.xProjected[4]+constants::OFFSET_3D_X, Render3D.yProjected[4]+constants::OFFSET_3D_Y, Render3D.xProjected[0]+constants::OFFSET_3D_X, Render3D.yProjected[0]+constants::OFFSET_3D_Y);
+    BSP_LCD_DrawLine(Render3D.xProjected[5]+constants::OFFSET_3D_X, Render3D.yProjected[5]+constants::OFFSET_3D_Y, Render3D.xProjected[1]+constants::OFFSET_3D_X, Render3D.yProjected[1]+constants::OFFSET_3D_Y);
     BSP_LCD_SetTextColor(LCD_COLOR_YELLOW); // Front face
-    BSP_LCD_DrawLine(Render3D.xProjected[0]+xOffset3d, Render3D.yProjected[0]+yOffset3d, Render3D.xProjected[1]+xOffset3d, Render3D.yProjected[1]+yOffset3d);
-    BSP_LCD_DrawLine(Render3D.xProjected[1]+xOffset3d, Render3D.yProjected[1]+yOffset3d, Render3D.xProjected[2]+xOffset3d, Render3D.yProjected[2]+yOffset3d);
-    BSP_LCD_DrawLine(Render3D.xProjected[2]+xOffset3d, Render3D.yProjected[2]+yOffset3d, Render3D.xProjected[3]+xOffset3d, Render3D.yProjected[3]+ yOffset3d);
-    BSP_LCD_DrawLine(Render3D.xProjected[3]+xOffset3d, Render3D.yProjected[3]+yOffset3d, Render3D.xProjected[0]+xOffset3d, Render3D.yProjected[0]+yOffset3d);
+    BSP_LCD_DrawLine(Render3D.xProjected[0]+constants::OFFSET_3D_X, Render3D.yProjected[0]+constants::OFFSET_3D_Y, Render3D.xProjected[1]+constants::OFFSET_3D_X, Render3D.yProjected[1]+constants::OFFSET_3D_Y);
+    BSP_LCD_DrawLine(Render3D.xProjected[1]+constants::OFFSET_3D_X, Render3D.yProjected[1]+constants::OFFSET_3D_Y, Render3D.xProjected[2]+constants::OFFSET_3D_X, Render3D.yProjected[2]+constants::OFFSET_3D_Y);
+    BSP_LCD_DrawLine(Render3D.xProjected[2]+constants::OFFSET_3D_X, Render3D.yProjected[2]+constants::OFFSET_3D_Y, Render3D.xProjected[3]+constants::OFFSET_3D_X, Render3D.yProjected[3]+ constants::OFFSET_3D_Y);
+    BSP_LCD_DrawLine(Render3D.xProjected[3]+constants::OFFSET_3D_X, Render3D.yProjected[3]+constants::OFFSET_3D_Y, Render3D.xProjected[0]+constants::OFFSET_3D_X, Render3D.yProjected[0]+constants::OFFSET_3D_Y);
     BSP_LCD_SetTextColor(LCD_COLOR_BLUE);   // Rear face
-    BSP_LCD_DrawLine(Render3D.xProjected[4]+xOffset3d, Render3D.yProjected[4]+yOffset3d, Render3D.xProjected[5]+xOffset3d, Render3D.yProjected[5]+yOffset3d);
-    BSP_LCD_DrawLine(Render3D.xProjected[5]+xOffset3d, Render3D.yProjected[5]+yOffset3d, Render3D.xProjected[6]+xOffset3d, Render3D.yProjected[6]+yOffset3d);
-    BSP_LCD_DrawLine(Render3D.xProjected[6]+xOffset3d, Render3D.yProjected[6]+yOffset3d, Render3D.xProjected[7]+xOffset3d, Render3D.yProjected[7]+yOffset3d);
-    BSP_LCD_DrawLine(Render3D.xProjected[7]+xOffset3d, Render3D.yProjected[7]+yOffset3d, Render3D.xProjected[4]+xOffset3d, Render3D.yProjected[4]+yOffset3d);    
+    BSP_LCD_DrawLine(Render3D.xProjected[4]+constants::OFFSET_3D_X, Render3D.yProjected[4]+constants::OFFSET_3D_Y, Render3D.xProjected[5]+constants::OFFSET_3D_X, Render3D.yProjected[5]+constants::OFFSET_3D_Y);
+    BSP_LCD_DrawLine(Render3D.xProjected[5]+constants::OFFSET_3D_X, Render3D.yProjected[5]+constants::OFFSET_3D_Y, Render3D.xProjected[6]+constants::OFFSET_3D_X, Render3D.yProjected[6]+constants::OFFSET_3D_Y);
+    BSP_LCD_DrawLine(Render3D.xProjected[6]+constants::OFFSET_3D_X, Render3D.yProjected[6]+constants::OFFSET_3D_Y, Render3D.xProjected[7]+constants::OFFSET_3D_X, Render3D.yProjected[7]+constants::OFFSET_3D_Y);
+    BSP_LCD_DrawLine(Render3D.xProjected[7]+constants::OFFSET_3D_X, Render3D.yProjected[7]+constants::OFFSET_3D_Y, Render3D.xProjected[4]+constants::OFFSET_3D_X, Render3D.yProjected[4]+constants::OFFSET_3D_Y);    
 }
 
 
 // ---------------------Flags set by Interrupts-------------------------------------------------------------------------
     // Draw projected model onto the LCD 
 void draw3dObject(void){
-    draw3dFlag = true;
+    draw3dObjectFlag = true;
     rotateTouchFlag = false;
     loadTestCubeFlag = false;
 }
 
     // Take peripheral reading, then move Servo & Stepper to next position
 void incrementScan(void){
-    scanFlag = true;
+    progressScanFlag = true;
     spinRenderFlag = false;
     rotateTouchFlag = false;
     loadTestCubeFlag = false;
@@ -277,8 +282,8 @@ void incrementScan(void){
 void manualRotation(void){
     rotateTouchFlag = true;
     spinRenderFlag = false;
-    scanFlag = false;
-    draw3dFlag = false;
+    progressScanFlag = false;
+    draw3dObjectFlag = false;
 }
 
 
@@ -351,15 +356,15 @@ int main(){
                 BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
                 BSP_LCD_FillRect(80, 50, 320, 155);
                 BSP_LCD_SetTextColor(drawColour);
-                for(int i = 0; i < 8099; i++){
-                    BSP_LCD_DrawLine(Render3D.xProjected[i] +xOffset3d, Render3D.yProjected[i] +yOffset3d, Render3D.xProjected[i+1] +xOffset3d,Render3D.yProjected[i+1] +yOffset3d);
+                for(int i = 0; i < constants::MAX_VERTICES; i++){
+                    BSP_LCD_DrawLine(Render3D.xProjected[i] +constants::OFFSET_3D_X, Render3D.yProjected[i] +constants::OFFSET_3D_Y, Render3D.xProjected[i+1] +constants::OFFSET_3D_X, Render3D.yProjected[i+1] +constants::OFFSET_3D_Y);
                 }
             }
             rotateTouchFlag = false;
         }
 
             // Scanning Routine, progress one step (causes mutex if in ISR)
-        if(scanFlag == true){
+        if(progressScanFlag == true){
                 // Update peripheral data. Clear lcd between layers
             updatePeripherals(IR.getDistance(), desiredScanAngle, depthMapLayer, RangePot.readVoltage());
             (scanningClockwise == true) ? desiredScanAngle++ : desiredScanAngle--;
@@ -376,33 +381,33 @@ int main(){
                     depthMapLayer = 0;
                     pixelIndex = 0;
                     Render3D.saveVertices();
-                    draw3dFlag = true;
+                    draw3dObjectFlag = true;
                 }
             }
                 // Move Stepper and Servo. Store xyz Coordinates
             if(desiredScanAngle %4 == 0) {Stepper.step(scanningClockwise, 1, 7);} // Temporary? Uni only has crap Steppers. (step angle too large, even with half step)
-            Servo.writePos((float)depthMapLayer);
+            Servo.writePos(depthMapLayer);
             Render3D.Vertices.y[pixelIndex] = -45 + depthMapLayer;
             Render3D.Vertices.x[pixelIndex] = -45 + desiredScanAngle;
-            Render3D.Vertices.z[pixelIndex] = (int16_t)(rangeCutoff / 2) - (int16_t)round(IR.lastDistance());
-            if(IR.lastDistance() >= rangeCutoff) {Render3D.Vertices.z[pixelIndex] = -(int16_t)(rangeCutoff / 2);}
+            Render3D.Vertices.z[pixelIndex] = ((float)rangeCutoff / 2) - round(IR.lastDistance());
+            if(IR.lastDistance() >= rangeCutoff) {Render3D.Vertices.z[pixelIndex] = -((float)rangeCutoff / 2);}
             pixelIndex++;
-            draw3dFlag = true; // Maybe temporary? Draws 3d object as it is scanned if true
-            scanFlag = false;
+            draw3dObjectFlag = true; // Maybe temporary? Draws 3d object as it is scanned if true
+            progressScanFlag = false;
         }
 
             // Draw object in 3d (Dont want this in ISR, lots of operations)
-        if(draw3dFlag == true){
+        if(draw3dObjectFlag == true){
             if(spinRenderFlag == true){
-                for(int j = 0; j<361; j++){
+                for(int j = 0; j < 360; j++){
                     Render3D.rotateVertices(j, rotationAxis);
                     Render3D.generateProjected();
                     while (!(LTDC->CDSR & LTDC_CDSR_VSYNCS)) {}     // Wait for v-sync. (Magic.)
                     BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
                     BSP_LCD_FillRect(80, 50, 320, 155);
                     BSP_LCD_SetTextColor(drawColour);
-                    for(int i = 0; i < 8099; i++){ // Connect each projected vertex to its neighbour
-                        BSP_LCD_DrawLine(Render3D.xProjected[i] +xOffset3d, Render3D.yProjected[i] +yOffset3d, Render3D.xProjected[i+1] +xOffset3d,Render3D.yProjected[i+1] +yOffset3d);
+                    for(int i = 0; i < constants::MAX_VERTICES; i++){ // Connect each projected vertex to its neighbour
+                        BSP_LCD_DrawLine(Render3D.xProjected[i] +constants::OFFSET_3D_X, Render3D.yProjected[i] +constants::OFFSET_3D_Y, Render3D.xProjected[i+1] +constants::OFFSET_3D_X,Render3D.yProjected[i+1] +constants::OFFSET_3D_Y);
                     }
                         // Restore vertex data from save
                     Render3D.restoreSave();
@@ -415,11 +420,11 @@ int main(){
             }else{
                 Render3D.generateProjected();
                 BSP_LCD_SetTextColor(drawColour);
-                for(int i = 0; i < 8099; i++){ // Connect each projected vertex to its neighbour
-                    BSP_LCD_DrawLine(Render3D.xProjected[i] +xOffset3d, Render3D.yProjected[i] +yOffset3d, Render3D.xProjected[i+1] +xOffset3d,Render3D.yProjected[i+1] +yOffset3d);
+                for(int i = 0; i < constants::MAX_VERTICES; i++){ // Connect each projected vertex to its neighbour
+                    BSP_LCD_DrawLine(Render3D.xProjected[i] +constants::OFFSET_3D_X, Render3D.yProjected[i] +constants::OFFSET_3D_Y, Render3D.xProjected[i+1] +constants::OFFSET_3D_X,Render3D.yProjected[i+1] +constants::OFFSET_3D_Y);
                 }
             }
-            draw3dFlag = false;
+            draw3dObjectFlag = false;
         }
 
             // Draw debug information on top of current screen. Toggleable.
@@ -443,10 +448,10 @@ int main(){
             sprintf((char*)text, "Scan Clockwise: %d    Angle: %d   Layer: %d", scanningClockwise, desiredScanAngle, depthMapLayer);
             //BSP_LCD_ClearStringLine(6);
             BSP_LCD_DisplayStringAt(0, LINE(6), (uint8_t *)&text, LEFT_MODE);
-            sprintf((char*)text, "Radar Offset X: %d   Y: %d", radarXoffset, radarYoffset); 
+            sprintf((char*)text, "Radar Offset X: %d   Y: %d", constants::OFFSET_RADAR_X, constants::OFFSET_RADAR_Y); 
             //BSP_LCD_ClearStringLine(7);
             BSP_LCD_DisplayStringAt(0, LINE(7), (uint8_t *)&text, LEFT_MODE);
-            sprintf((char*)text, "DepthMap Offset X: %d   Y: %d", depthMapXoffset, depthMapYoffset); 
+            sprintf((char*)text, "DepthMap Offset X: %d   Y: %d", constants::OFFSET_DEPTHMAP_X, constants::OFFSET_DEPTHMAP_Y); 
             //BSP_LCD_ClearStringLine(8);
             BSP_LCD_DisplayStringAt(0, LINE(8), (uint8_t *)&text, LEFT_MODE);
             sprintf((char*)text, "3D Array Index %d", pixelIndex); 
