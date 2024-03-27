@@ -3,21 +3,23 @@
 # maoudisa-assignment
 maoudisa 14074479 Assignment
 
-An embedded system to gather range data and display/render that data in the form of an image or similar.
-"3d camera"? maybe? todo: this.
+3D Scanner & Renderer
+An embedded system to scan an object, then render the resulting scan in 3D to be inspected by the user.
 
-### Goals:
+### Goals & Pre-Project Discussion:
 Goals for the Assignment. \
 Namely, the objectives defined in the marking criteria, and how i intend to achieve each one.
 
 #### Grade:
-100% lol\
+100%.
 Satisfy all marking criteria to a maximum
 
 #### Complexity (Technologies):
 the goal of the project will be to develop the aforementioned embedded system using a range of technologies as to satisfy the assignment criteria.\
-The system will purposely include a range of technologies, even in scenarios where it would traditionally make sense to use multiple instances of a single technology, for example: instead of using two stepper motors (one for x movement and one for y movement), this project will make use of a stepper motor for x movement and a servo motor for y movement. or by using a rotary encoder and a potentiometer, where two potentiometers would suffice.\
-While this may not be the most practical approach, it affords me the opportunity to write a library for, and implement the use of more technologies which will better aid the achievement of the following excerpt from the marking criteria:\
+The system will purposely include a range of technologies, even in scenarios where it would traditionally make sense to use multiple instances of a\
+single technology, for example: instead of using two stepper motors (one for x movement and one for y movement), this project will make use of a\
+stepper motor for x movement and a servo motor for y movement. or by using a rotary encoder and a potentiometer, where two potentiometers would suffice.\
+While this may not be the most practical approach, it affords me the opportunity to write a library for, and implement the use of more technologies which\ will better aid the achievement of the following excerpt from the marking criteria:\
 
 "a wide range of complex\
 input and output devices some of\
@@ -26,15 +28,21 @@ the tutorial material, all working\
 as expected."
 
 #### Version Control (Regular Commits and a Clear Workflow):
-Another goal of the project is to provide a meaningfull and well commented/documented update to the repository at an interval of at least 4 times per week\ (I will aim for daily commits, however: 5 assignments + 2 exams due in the next few weeks).\
-Each commit will aim to demonstrate a clear direction and progress route through the projects development, i.e. evidence i havent just copied a load of stuff i dont understand from stackoverflow.\
+Another goal of the project is to provide a meaningful and well commented/documented update to the repository at regular intervals.\ 
+(I will aim for daily commits, however: time waits for no man.)\
+Any periods without a commit will be compensated for in magnitude or quantity once updates resume.\
+There are 27 days between the start of this project on March 6th, and the due date April 2nd, therefore I will ensure there are at MINIMUM, 27 commits of\
+substanstial size, quality, or progress before April 2nd.\
+Each commit will aim to demonstrate a clear direction and progress route through the projects development, i.e. evidence i havent just copied a load of\
+stuff i dont understand from stackoverflow.\
 
-I consider a meaningfull update to be along the lines of, but not limited to, the following :\
+I consider a meaningful update to be along the lines of, but not limited to, the following :\
 
- - Clear functional progress in, or the completion of, a library for a component (.h and .cpp files in folder designated: "My-X-Lib").\
+ - Functional progress in, or the completion of, a library for a component (.h and .cpp files in folder designated: "My-X-Lib").\
  - Well commented, significant progress on the functionality of the project.\
- - Significant progress or beggining of Implementation of a new technology (functional addition to debug screen or similar etc.).\
+ - Significant progress in, or beginning of, the Implementation of a new technology (a functional addition to debug screen for example.).\
  - "Housekeeping": formatting, commenting, & encapsulating code to better reflect OOP practices etc.\
+ - Checkoints, functional milestones, or working implementation of a feature, such as a demo (i.e. "50Hz Rotating Cube Demo" on March 18th) .\
 
 TL;DR:
 Regular updates of some significance, with an accurate commit message.\
@@ -49,6 +57,10 @@ frame. Demonstrates clear\
 incremental progress with logical\
 commit messages for features etc."
 
+Note: Marking criteria also states that commits should contain gradual increments in the magnitude of "__INDIVIDUAL LINES OF CODE__"! While I am in no\
+position to dispute this I hope this is assessed *pro rata* given how another criteria is "Functionality and Complexity.\ 
+Am I to commit a non-working chunk of code without testing and re-writing it first?
+
 #### Code Quality:
 Write practical code and follow best practices throughout all aspects of the assignment, including but not limited to things such as:\
 
@@ -57,9 +69,9 @@ Write practical code and follow best practices throughout all aspects of the ass
  - use MEANINGFUL comments as a form as documentation, no functions without comments, but also dont have a useless comment on every single line.\
  - need to call the same bit of code many many times? PUT IT IN A FUNCTION/CLASS/LIBRARY.\
  - camelCase is king.\
- - dont use uint32_t where uint8_t would suffice. (not exclusive to integers)\
+ - dont use uint32_t where uint8_t would suffice. not exclusive to integers. (Exception: Chris said it's ok to "throw floats at it")\
 
-(I will consider myself exempt from this restrictions during development/debugging, however final code should follow all without exception).\
+(I will consider myself exempt from these restrictions during development/debugging, however final code should follow all without exception).\
 the following assignment criteria is self explanitory, I will attempt to be a good code monkey:\
 
 "Outstanding tidy code. Good\
@@ -73,6 +85,13 @@ Additional overlap from the following excerpt:\
 
 "Use of custom classes, objects,\
 and OOP concepts."
+
+Naming Convention I will use:
+Variables: camelCase
+User-Defined/Custom Types: PascalCase
+Constants: CAPS_SEPARATED_BY_UNDERSCORES
+Private Member Variables: \_underscorePrefixedCamelCase
+Descriptive Self-Documenting identifiers are mandatory.
 
 #### Complexity & Architechture (Embedded Code)
 
@@ -91,7 +110,7 @@ loops, etc."
 
 ## 1 - Embedded System Proposal
 
-Description: Pseudo 3d scanner, a device to scan a 3d object and create a 2d image with additional z axis data.
+Description: Pseudo 3d scanner, a device to scan a 3d object and create a 2d image with additional z axis data, IE using colour to represent depth in a 2d image. This was later expanded to include an actual 3D render of the scanned object.
 
 Inputs:
  - Potentiometer
