@@ -16,7 +16,7 @@
     // Magic Numbers / Constants
 namespace constants{
         // Menu/Option Constants
-    constexpr int8_t MAX_MENU_ENTRIES = 4;
+    constexpr int8_t MAX_MENU_ENTRIES = 4 -1;
         // Offsets/Coordinates for drawing on LCD
     constexpr uint8_t OFFSET_3D_X = 240;         // Offsets for drawing 3D object centred on (0,0) which is at the top left of the LCD.
     constexpr uint8_t OFFSET_3D_Y = 127;
@@ -40,7 +40,7 @@ void manualRotation(void);
 
     // Obtaining XYZ values via scan
 bool scanningClockwise = false; // Scan direction: False = CCW(-X), True = CW(+X) 
-uint8_t desiredScanAngle = 0;   // Scan/Stepper angle (Horizontal/X Axis)
+int8_t desiredScanAngle = 0;   // Scan/Stepper angle (Horizontal/X Axis)
 uint8_t depthMapLayer = 0;      // Y value/layer of depthmap, also used for Servo angle (Vertical/Y Axis)
 uint8_t rangeCutoff = 100;      // Any distances sensed past this value, are capped to this value (Depth/Z Axis)
 
@@ -145,7 +145,7 @@ void rotaryButtonPressed(void){
     // Scroll through menu when Encoder is turned
 void rotaryTurned(void){
     (Encoder.getClockwise() == true) ? menuCounter++ : menuCounter--;
-    if(menuCounter >= constants::MAX_MENU_ENTRIES){
+    if(menuCounter > constants::MAX_MENU_ENTRIES){
         menuCounter = 0; 
     }else if(menuCounter < 0){
         menuCounter = constants::MAX_MENU_ENTRIES;
@@ -356,7 +356,7 @@ int main(){
                 BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
                 BSP_LCD_FillRect(80, 50, 320, 155);
                 BSP_LCD_SetTextColor(drawColour);
-                for(int i = 0; i < constants::MAX_VERTICES; i++){
+                for(int i = 0; i < constants::MAX_VERTICES -1; i++){
                     BSP_LCD_DrawLine(Render3D.xProjected[i] +constants::OFFSET_3D_X, Render3D.yProjected[i] +constants::OFFSET_3D_Y, Render3D.xProjected[i+1] +constants::OFFSET_3D_X, Render3D.yProjected[i+1] +constants::OFFSET_3D_Y);
                 }
             }
@@ -389,8 +389,8 @@ int main(){
             Servo.writePos(depthMapLayer);
             Render3D.Vertices.y[pixelIndex] = -45 + depthMapLayer;
             Render3D.Vertices.x[pixelIndex] = -45 + desiredScanAngle;
-            Render3D.Vertices.z[pixelIndex] = ((float)rangeCutoff / 2) - round(IR.lastDistance());
-            if(IR.lastDistance() >= rangeCutoff) {Render3D.Vertices.z[pixelIndex] = -((float)rangeCutoff / 2);}
+            Render3D.Vertices.z[pixelIndex] = (int16_t)(rangeCutoff / 2) - round(IR.lastDistance());
+            if(IR.lastDistance() >= rangeCutoff) {Render3D.Vertices.z[pixelIndex] = -(int16_t)(rangeCutoff / 2);}
             pixelIndex++;
             draw3dObjectFlag = true; // Maybe temporary? Draws 3d object as it is scanned if true
             progressScanFlag = false;
@@ -406,8 +406,8 @@ int main(){
                     BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
                     BSP_LCD_FillRect(80, 50, 320, 155);
                     BSP_LCD_SetTextColor(drawColour);
-                    for(int i = 0; i < constants::MAX_VERTICES; i++){ // Connect each projected vertex to its neighbour
-                        BSP_LCD_DrawLine(Render3D.xProjected[i] +constants::OFFSET_3D_X, Render3D.yProjected[i] +constants::OFFSET_3D_Y, Render3D.xProjected[i+1] +constants::OFFSET_3D_X,Render3D.yProjected[i+1] +constants::OFFSET_3D_Y);
+                    for(int i = 0; i < constants::MAX_VERTICES -1; i++){ // Connect each projected vertex to its neighbour
+                        BSP_LCD_DrawLine(Render3D.xProjected[i] +constants::OFFSET_3D_X, Render3D.yProjected[i] +constants::OFFSET_3D_Y, Render3D.xProjected[i+1] +constants::OFFSET_3D_X, Render3D.yProjected[i+1] +constants::OFFSET_3D_Y);
                     }
                         // Restore vertex data from save
                     Render3D.restoreSave();
@@ -420,7 +420,7 @@ int main(){
             }else{
                 Render3D.generateProjected();
                 BSP_LCD_SetTextColor(drawColour);
-                for(int i = 0; i < constants::MAX_VERTICES; i++){ // Connect each projected vertex to its neighbour
+                for(int i = 0; i < constants::MAX_VERTICES -1; i++){ // Connect each projected vertex to its neighbour
                     BSP_LCD_DrawLine(Render3D.xProjected[i] +constants::OFFSET_3D_X, Render3D.yProjected[i] +constants::OFFSET_3D_Y, Render3D.xProjected[i+1] +constants::OFFSET_3D_X,Render3D.yProjected[i+1] +constants::OFFSET_3D_Y);
                 }
             }
