@@ -13,7 +13,7 @@
 #include "my3d.h"
 #include "myButtons.h"
 
-    // Magic Numbers / Constants
+    // Magic Numbers / Constants                 // using constexpr over #define for evaluation at compile time. considered better practice in modern c++
 namespace constants{
         // Menu/Option Constants
     constexpr int8_t MAX_MENU_ENTRIES = 4 -1;
@@ -55,7 +55,7 @@ bool drawDebugFlag = false;     // Draw Debug-Screen. Peripheral data, etc.
     // Menu navigation/control
 int8_t menuCounter = 0;         // Used to store last/select a menu option via rotary Encoder.
 uint8_t rotationAxis = 0;       // Axis of rotation for 3D objects. 0, 1, 2 == X, Y, Z.
-uint16_t pixelIndex = 8100;        // Current xyz index to write/read.
+uint16_t pixelIndex = 8100;     // Current xyz index to write/read.
 
     // Misc.
 uint32_t drawColour = LCD_COLOR_YELLOW; // This is modified by SliderDrawColour. Default setting is yellow.
@@ -92,6 +92,9 @@ Slider SliderDrawColour(10, 65, 10, 42, LCD_COLOR_LIGHTMAGENTA, LCD_COLOR_WHITE,
 Utilities Utils;            // Utilities class. Frequently used, non program-specific functions.
 Ticker TickerNextStep;      // used to iterate through object scan
 Ticker TickerUpdateScreen;  // Refresh screen with updated view from selected mode, normally 50Hz
+
+    //Threads / RTOS
+Thread ThreadTSButtons;
 
 //----------------------------Function definitons--------------------------------------------
 
@@ -286,6 +289,39 @@ void manualRotation(void){
     draw3dObjectFlag = false;
 }
 
+//--------------------Functions executed via seperate thread-------------------------------------------------------------
+    // Check TS button states, and rotate render accordingly
+void tsButtonThreadFunction(void){
+        // Rotate or reset according to buttons pressed
+    if(ButtonIncreaseFov.isPressed()) {Render3D.focalLength+=1;}                 // Note: yes. if-elseif-else is faster here. (stops comparisons when true).
+    if(ButtonDecreaseFov.isPressed()) {Render3D.focalLength-=1;}                 // using if-if-if to support multiple simultaneous button presses.
+    if(ButtonIncreaseRotationX.isPressed()) {Render3D.rotateVertices(1, 0);}
+    if(ButtonDecreaseRotationX.isPressed()) {Render3D.rotateVertices(-1, 0);}
+    if(ButtonIncreaseRotationY.isPressed()) {Render3D.rotateVertices(1, 1);}
+    if(ButtonDecreaseRotationY.isPressed()) {Render3D.rotateVertices(-1, 1);}
+    if(ButtonIncreaseRotationZ.isPressed()) {Render3D.rotateVertices(1, 2);}
+    if(ButtonDecreaseRotationZ.isPressed()) {Render3D.rotateVertices(-1, 2);}
+    if(ButtonResetRotation.isPressed()){
+        loadTestCubeFlag = false;
+        Render3D.restoreSave();
+    }
+        // Choose object colour via slider.
+    SliderDrawColour.isPressed();
+    if(SliderDrawColour.sliderOut <= 33){
+        redArgb = Utils.valMap(SliderDrawColour.sliderOut, 0, 33, 0x00, 0xFF);
+        greenArgb = Utils.valMap(SliderDrawColour.sliderOut, 0, 33, 0xFF, 0x00);
+        drawColour = Utils.argbToHex(0xFF, redArgb, greenArgb, blueArgb);
+    }else if(SliderDrawColour.sliderOut <= 66){
+        greenArgb = Utils.valMap(SliderDrawColour.sliderOut, 0, 33, 0x00, 0xFF);
+        blueArgb = Utils.valMap(SliderDrawColour.sliderOut, 0, 33, 0xFF, 0x00);
+        drawColour = Utils.argbToHex(0xFF, redArgb, greenArgb, blueArgb);
+    }else if(SliderDrawColour.sliderOut <= 100){
+        blueArgb = Utils.valMap(SliderDrawColour.sliderOut, 0, 33, 0x00, 0xFF);
+        redArgb = Utils.valMap(SliderDrawColour.sliderOut, 0, 33, 0xFF, 0x00);
+        drawColour = Utils.argbToHex(0xFF, redArgb, greenArgb, blueArgb);
+    }
+}
+
 
 //----------------------------Main stuff----------------------------------------------------------
 
@@ -316,34 +352,8 @@ int main(){
 
             // Manual control over 3D render (Slow)
         if(rotateTouchFlag == true){
-                // Rotate or reset according to buttons pressed
-            if(ButtonIncreaseFov.isPressed()) {Render3D.focalLength+=1;}                 // Note: yes. if-elseif-else is faster here. (stops comparisons when true).
-            if(ButtonDecreaseFov.isPressed()) {Render3D.focalLength-=1;}                 // using if-if-if to support multiple simultaneous button presses.
-            if(ButtonIncreaseRotationX.isPressed()) {Render3D.rotateVertices(1, 0);}
-            if(ButtonDecreaseRotationX.isPressed()) {Render3D.rotateVertices(-1, 0);}
-            if(ButtonIncreaseRotationY.isPressed()) {Render3D.rotateVertices(1, 1);}
-            if(ButtonDecreaseRotationY.isPressed()) {Render3D.rotateVertices(-1, 1);}
-            if(ButtonIncreaseRotationZ.isPressed()) {Render3D.rotateVertices(1, 2);}
-            if(ButtonDecreaseRotationZ.isPressed()) {Render3D.rotateVertices(-1, 2);}
-            if(ButtonResetRotation.isPressed()){
-                loadTestCubeFlag = false;
-                Render3D.restoreSave();
-            }
-                // Choose object colour via slider.
-            SliderDrawColour.isPressed();
-            if(SliderDrawColour.sliderOut <= 33){
-                redArgb = Utils.valMap(SliderDrawColour.sliderOut, 0, 33, 0x00, 0xFF);
-                greenArgb = Utils.valMap(SliderDrawColour.sliderOut, 0, 33, 0xFF, 0x00);
-                drawColour = Utils.argbToHex(0xFF, redArgb, greenArgb, blueArgb);
-            }else if(SliderDrawColour.sliderOut <= 66){
-                greenArgb = Utils.valMap(SliderDrawColour.sliderOut, 0, 33, 0x00, 0xFF);
-                blueArgb = Utils.valMap(SliderDrawColour.sliderOut, 0, 33, 0xFF, 0x00);
-                drawColour = Utils.argbToHex(0xFF, redArgb, greenArgb, blueArgb);
-            }else if(SliderDrawColour.sliderOut <= 100){
-                blueArgb = Utils.valMap(SliderDrawColour.sliderOut, 0, 33, 0x00, 0xFF);
-                redArgb = Utils.valMap(SliderDrawColour.sliderOut, 0, 33, 0xFF, 0x00);
-                drawColour = Utils.argbToHex(0xFF, redArgb, greenArgb, blueArgb);
-            }
+                // Attatch thread to monitor TS Buttons and rotate render accordingly
+            ThreadTSButtons.start(tsButtonThreadFunction);
                 // Generate coordinates, Clear Object, Draw image. (Only clear immidiately before drawing to reduce strobing)
                 // Buttons are not redrawn, But also not cleared. Faster. (Exception > Sliders)
             Render3D.generateProjected();
@@ -361,6 +371,10 @@ int main(){
                 }
             }
             rotateTouchFlag = false;
+        }else{
+            // Wait for TS button thread to complete, then terminate the thread if this rotateTouchFlag is unset
+            ThreadTSButtons.join();
+            ThreadTSButtons.terminate();
         }
 
             // Scanning Routine, progress one step (causes mutex if in ISR)
