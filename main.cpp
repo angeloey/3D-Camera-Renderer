@@ -55,7 +55,7 @@ bool drawDebugFlag = false;     // Draw Debug-Screen. Peripheral data, etc.
     // Menu navigation/control
 int8_t menuCounter = 0;         // Used to store last/select a menu option via rotary Encoder.
 uint8_t rotationAxis = 0;       // Axis of rotation for 3D objects. 0, 1, 2 == X, Y, Z.
-uint16_t pixelIndex = 0;        // Current xyz index to write/read.
+uint16_t pixelIndex = 8100;        // Current xyz index to write/read.
 
     // Misc.
 uint32_t drawColour = LCD_COLOR_YELLOW; // This is modified by SliderDrawColour. Default setting is yellow.
@@ -379,7 +379,7 @@ int main(){
                 if(depthMapLayer > 90){
                     TickerNextStep.detach();
                     depthMapLayer = 0;
-                    pixelIndex = 0;
+                    pixelIndex = 8100;
                     Render3D.saveVertices();
                     draw3dObjectFlag = true;
                 }
@@ -391,7 +391,7 @@ int main(){
             Render3D.Vertices.x[pixelIndex] = -45 + desiredScanAngle;
             Render3D.Vertices.z[pixelIndex] = (int16_t)(rangeCutoff / 2) - round(IR.lastDistance());
             if(IR.lastDistance() >= rangeCutoff) {Render3D.Vertices.z[pixelIndex] = -(int16_t)(rangeCutoff / 2);}
-            pixelIndex++;
+            pixelIndex--;
             draw3dObjectFlag = true; // Maybe temporary? Draws 3d object as it is scanned if true
             progressScanFlag = false;
         }
