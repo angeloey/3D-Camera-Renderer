@@ -86,7 +86,7 @@ Additional overlap from the following excerpt:\
 "Use of custom classes, objects,\
 and OOP concepts."
 
-Naming Convention I will use:
+Naming Convention/Practices adhered to:
 Variables: camelCase
 User-Defined/Custom Types: PascalCase
 Constants: CAPS_SEPARATED_BY_UNDERSCORES
@@ -110,41 +110,52 @@ loops, etc."
 
 ## 1 - Embedded System Proposal
 
-Description: Pseudo 3d scanner, a device to scan a 3d object and create a 2d image with additional z axis data, IE using colour to represent depth in a 2d image. This was later expanded to include an actual 3D render of the scanned object.
+Description: A 3D Camera/Scanner.
+A device which scans a scene along the X and Y axis, while recording Z axis data about the scene. A 2D representation of the scene, alongside a 3D render is generated from the recoded data, which the user can interact with to inspect the object/scene post scan. Colour is used to represent depth in the 2d Image.
 
-Inputs:
- - Potentiometer
- - Rotary Encoder
- - IR Range Sensor
- - Touchscreen
-
-Outputs:
- - LCD Screen
- - Servo Motor
- - Stepper Motor
 
 Basic operation:
- - fire a range sensor at a bunch of known directions, use this range data to construct a "depth map" image on an LCD screen
+The device uses a stepper motor and a servo to take range measurements in increments of 1 degrees, in a 90x90 degree FOV.\
+The range measurements are made using an IR Sensor, the maximum range of which can be configured using an potentiometer.\
+During and after completion of the scan, the data recorded is used to represent the scanned scene on the LCD Screen. The user can interact with a 3D render of the scanned scene via the touchscreen, or by selecting an option to automaticcaly rotate the render via the rotary encoder menu.
 
+The system also contains customization options such a colour slider, and fov adjustment, which are modified in their corresponding menu via the touchscreen interface.
 
-
+Verification of Successful Operation:
+The fundamental operation of the system can be considered successful if a scene/object can be scanned by the device, producing a render which can be interacted with by user. I.e. can be rotate around all 3 Axis at will.
 
 
 ## 2 - Hardware Design
 
-PCB Gerber files and Circuit Schematics will be included in repo, (might not need this? will breadboard suffice? marking criteria does not mention circuit design).
-
 Component List:
 
-STM32f74G-DISCO\
-todo\
+STM32f74NG-DISCO
 
+Inputs:
+ - Potentiometer - NHP22
+ - Rotary Encoder - EC11
+ - IR Range Sensor - GP2Y0A21YK
+ - Touchscreen - STM32F74NG-DISCO
+
+Outputs:
+ - LCD Screen - STM32F74NG-DISCO
+ - Servo Motor - SG90
+ - Stepper Motor - PJJ051ZA-P
+
+STM32F74NG-DISCO Datasheet: https://www.farnell.com/datasheets/1944312.pdf
 IR Sensor Datasheet: https://www.sparkfun.com/datasheets/Components/GP2Y0A21YK.pdf
+Potentiometer Datasheet: https://p3america.com/content/pdf/nhp22.pdf
+Rotary Encoder Datasheet: https://www.farnell.com/datasheets/1837001.pdf
+Servo Datsheet: https://static.rapidonline.com/pdf/37-1330t.pdf
+Stepper Motor Datsheet: University Provided, cannot find information online
 
 
+Connection Diagram:
+![image](https://github.coventry.ac.uk/storage/user/6796/files/ee9ec413-ffa5-4819-95da-15ec06ea4bdf)
 
 
-
+System Runs on MbedOS 6
+MbedOS Docs: https://os.mbed.com/docs/mbed-os/v6.16/introduction/index.html
 
 ## 3 - Embedded Code Implementation and Architechture
 
