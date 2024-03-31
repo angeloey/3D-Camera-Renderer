@@ -93,8 +93,9 @@ Utilities Utils;            // Utilities class. Frequently used, non program-spe
 Ticker TickerNextStep;      // used to iterate through object scan
 Ticker TickerUpdateScreen;  // Refresh screen with updated view from selected mode, normally 50Hz
 
-    //Threads / RTOS
-Thread ThreadTSButtons;
+    //Threads / RTOS / Mutex
+Thread ThreadTSButtons;     // Dedicated thread for handling TS Button Presses
+Mutex MutexTSButtons;       // Mutex lock for when reset button needs to load (8100*3) vertices.
 
 //----------------------------Function definitons--------------------------------------------
 
@@ -301,9 +302,12 @@ void tsButtonThreadFunction(void){
     if(ButtonDecreaseRotationY.isPressed()) {Render3D.rotateVertices(-1, 1);}
     if(ButtonIncreaseRotationZ.isPressed()) {Render3D.rotateVertices(1, 2);}
     if(ButtonDecreaseRotationZ.isPressed()) {Render3D.rotateVertices(-1, 2);}
+        // Lock thread via mutex, load saved vertices, then unlock thread again.
     if(ButtonResetRotation.isPressed()){
         loadTestCubeFlag = false;
+        MutexTSButtons.lock();
         Render3D.restoreSave();
+        MutexTSButtons.unlock();
     }
         // Choose object colour via slider.
     SliderDrawColour.isPressed();
