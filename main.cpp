@@ -1,5 +1,6 @@
 // Angelo Maoudis 14074479
 #include "mbed.h"
+#include "rtos.h"
 #include "stm32746g_discovery_lcd.h"
 #include "stm32746g_discovery_ts.h"
 #include "math.h"
@@ -37,6 +38,7 @@ void draw3dObject(void);
 void rotatingCubeDemo(void);
 void drawDebugCube(void);
 void manualRotation(void);
+void tsButtonThreadFunction(void);
 
     // Obtaining XYZ values via scan
 bool scanningClockwise = false; // Scan direction: False = CCW(-X), True = CW(+X) 
@@ -94,8 +96,9 @@ Ticker TickerNextStep;      // used to iterate through object scan
 Ticker TickerUpdateScreen;  // Refresh screen with updated view from selected mode, normally 50Hz
 
     //Threads / RTOS / Mutex
-Thread ThreadTSButtons;     // Dedicated thread for handling TS Button Presses
-Mutex MutexTSButtons;       // Mutex lock for when reset button needs to load (8100*3) vertices.
+Thread ThreadTSButtons;       // Dedicated thread for handling TS Button Presses
+Mutex MutexTSButtons;         // Mutex lock for when reset button needs to load (8100*3) vertices.
+Semaphore SemaphoreTSButtons(1, 1); // Semaphore, used to control execution of TS Button thread
 
 //----------------------------Function definitons--------------------------------------------
 
@@ -227,8 +230,8 @@ void rotatingCubeDemo(void){
     Render3D.Vertices.x[6] = 40; Render3D.Vertices.y[6] = 40; Render3D.Vertices.z[6] = -40;   // back top right
     Render3D.Vertices.x[7] = -40; Render3D.Vertices.y[7] = 40; Render3D.Vertices.z[7] = -40;  // back top left
     Render3D.saveVertices();
-        // Display the cube at every angle from 0 to 360 along an axis.
-    for(int j = 0; j < 360; j++){
+        // Display the cube at every angle from 0 to 360 along an axis. for 361 so it ends at 360
+    for(int j = 0; j < 361; j++){
         Render3D.rotateVertices(j, rotationAxis);
         Render3D.generateProjected();
         drawDebugCube();
@@ -293,36 +296,42 @@ void manualRotation(void){
 //--------------------Functions executed via seperate thread-------------------------------------------------------------
     // Check TS button states, and rotate render accordingly
 void tsButtonThreadFunction(void){
-        // Rotate or reset according to buttons pressed
-    if(ButtonIncreaseFov.isPressed()) {Render3D.focalLength+=1;}                 // Note: yes. if-elseif-else is faster here. (stops comparisons when true).
-    if(ButtonDecreaseFov.isPressed()) {Render3D.focalLength-=1;}                 // using if-if-if to support multiple simultaneous button presses.
-    if(ButtonIncreaseRotationX.isPressed()) {Render3D.rotateVertices(1, 0);}
-    if(ButtonDecreaseRotationX.isPressed()) {Render3D.rotateVertices(-1, 0);}
-    if(ButtonIncreaseRotationY.isPressed()) {Render3D.rotateVertices(1, 1);}
-    if(ButtonDecreaseRotationY.isPressed()) {Render3D.rotateVertices(-1, 1);}
-    if(ButtonIncreaseRotationZ.isPressed()) {Render3D.rotateVertices(1, 2);}
-    if(ButtonDecreaseRotationZ.isPressed()) {Render3D.rotateVertices(-1, 2);}
-        // Lock thread via mutex, load saved vertices, then unlock thread again.
-    if(ButtonResetRotation.isPressed()){
-        loadTestCubeFlag = false;
-        MutexTSButtons.lock();
-        Render3D.restoreSave();
-        MutexTSButtons.unlock();
-    }
-        // Choose object colour via slider.
-    SliderDrawColour.isPressed();
-    if(SliderDrawColour.sliderOut <= 33){
-        redArgb = Utils.valMap(SliderDrawColour.sliderOut, 0, 33, 0x00, 0xFF);
-        greenArgb = Utils.valMap(SliderDrawColour.sliderOut, 0, 33, 0xFF, 0x00);
-        drawColour = Utils.argbToHex(0xFF, redArgb, greenArgb, blueArgb);
-    }else if(SliderDrawColour.sliderOut <= 66){
-        greenArgb = Utils.valMap(SliderDrawColour.sliderOut, 0, 33, 0x00, 0xFF);
-        blueArgb = Utils.valMap(SliderDrawColour.sliderOut, 0, 33, 0xFF, 0x00);
-        drawColour = Utils.argbToHex(0xFF, redArgb, greenArgb, blueArgb);
-    }else if(SliderDrawColour.sliderOut <= 100){
-        blueArgb = Utils.valMap(SliderDrawColour.sliderOut, 0, 33, 0x00, 0xFF);
-        redArgb = Utils.valMap(SliderDrawColour.sliderOut, 0, 33, 0xFF, 0x00);
-        drawColour = Utils.argbToHex(0xFF, redArgb, greenArgb, blueArgb);
+    while(true){
+            // Try to aquire semaphore, wait untill one is available
+        SemaphoreTSButtons.acquire();
+            // Rotate or reset according to buttons pressed
+        if(ButtonIncreaseFov.isPressed()) {Render3D.focalLength+=1;}                 // Note: yes. if-elseif-else is faster here. (stops comparisons when true).
+        if(ButtonDecreaseFov.isPressed()) {Render3D.focalLength-=1;}                 // using if-if-if to support multiple simultaneous button presses.
+        if(ButtonIncreaseRotationX.isPressed()) {Render3D.rotateVertices(1, 0);}
+        if(ButtonDecreaseRotationX.isPressed()) {Render3D.rotateVertices(-1, 0);}
+        if(ButtonIncreaseRotationY.isPressed()) {Render3D.rotateVertices(1, 1);}
+        if(ButtonDecreaseRotationY.isPressed()) {Render3D.rotateVertices(-1, 1);}
+        if(ButtonIncreaseRotationZ.isPressed()) {Render3D.rotateVertices(1, 2);}
+        if(ButtonDecreaseRotationZ.isPressed()) {Render3D.rotateVertices(-1, 2);}
+            // Lock thread via mutex, load saved vertices, then unlock thread again.
+        if(ButtonResetRotation.isPressed()){
+            loadTestCubeFlag = false;
+            MutexTSButtons.lock();
+            Render3D.restoreSave();
+            MutexTSButtons.unlock();
+        }
+            // Choose object colour via slider.
+        SliderDrawColour.isPressed();
+        if(SliderDrawColour.sliderOut <= 33){
+            redArgb = Utils.valMap(SliderDrawColour.sliderOut, 0, 33, 0x00, 0xFF);
+            greenArgb = Utils.valMap(SliderDrawColour.sliderOut, 0, 33, 0xFF, 0x00);
+            drawColour = Utils.argbToHex(0xFF, redArgb, greenArgb, blueArgb);
+        }else if(SliderDrawColour.sliderOut <= 66){
+            greenArgb = Utils.valMap(SliderDrawColour.sliderOut, 0, 33, 0x00, 0xFF);
+            blueArgb = Utils.valMap(SliderDrawColour.sliderOut, 0, 33, 0xFF, 0x00);
+            drawColour = Utils.argbToHex(0xFF, redArgb, greenArgb, blueArgb);
+        }else if(SliderDrawColour.sliderOut <= 100){
+            blueArgb = Utils.valMap(SliderDrawColour.sliderOut, 0, 33, 0x00, 0xFF);
+            redArgb = Utils.valMap(SliderDrawColour.sliderOut, 0, 33, 0xFF, 0x00);
+            drawColour = Utils.argbToHex(0xFF, redArgb, greenArgb, blueArgb);
+        }
+            // Release Control of semaphore, so this thread can be "paused"
+        SemaphoreTSButtons.release();
     }
 }
 
@@ -356,6 +365,8 @@ int main(){
 
             // Manual control over 3D render (Slow)
         if(rotateTouchFlag == true){
+                // Relinquish control of Semaphore so TSButton thread can run
+            SemaphoreTSButtons.release();
                 // Attatch thread to monitor TS Buttons and rotate render accordingly
             ThreadTSButtons.start(tsButtonThreadFunction);
                 // Generate coordinates, Clear Object, Draw image. (Only clear immidiately before drawing to reduce strobing)
@@ -374,15 +385,12 @@ int main(){
                     BSP_LCD_DrawLine(Render3D.xProjected[i] +constants::OFFSET_3D_X, Render3D.yProjected[i] +constants::OFFSET_3D_Y, Render3D.xProjected[i+1] +constants::OFFSET_3D_X, Render3D.yProjected[i+1] +constants::OFFSET_3D_Y);
                 }
             }
-            rotateTouchFlag = false;
-        }else{
-            // Wait for TS button thread to complete, then terminate the thread if this rotateTouchFlag is unset
-            ThreadTSButtons.join();
-            ThreadTSButtons.terminate();
         }
 
             // Scanning Routine, progress one step (causes mutex if in ISR)
         if(progressScanFlag == true){
+                // Take semaphore so TSButtons cant run
+            SemaphoreTSButtons.acquire();
                 // Update peripheral data. Clear lcd between layers
             updatePeripherals(IR.getDistance(), desiredScanAngle, depthMapLayer, RangePot.readVoltage());
             (scanningClockwise == true) ? desiredScanAngle++ : desiredScanAngle--;
@@ -416,6 +424,8 @@ int main(){
 
             // Draw object in 3d (Dont want this in ISR, lots of operations)
         if(draw3dObjectFlag == true){
+                // Take semaphore so TSButtons cant run
+            SemaphoreTSButtons.acquire();
             if(spinRenderFlag == true){
                 for(int j = 0; j < 360; j++){
                     Render3D.rotateVertices(j, rotationAxis);
