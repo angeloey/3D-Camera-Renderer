@@ -12,7 +12,8 @@ UartInterface::UartInterface(PinName pinTX, PinName pinRX, uint32_t Baud):Serial
 void UartInterface::processInput(void){
 
         // get char from serial port
-    if (SerialPort.read(&_character, 1)) {
+    if (SerialPort.readable()){
+        SerialPort.read(&_character, 1);
             // if the character recieved from serial port isn't newline/carriage return, add it to buffer (_command) at index
         if(_character != '\n' && _character != '\r')
         {
@@ -42,6 +43,6 @@ void UartInterface::runCommand(char *commandToRun){
         // Do something else
         printf("testTwo_Recieved\r\n");
     }else{
-        printf("Could not recognise command");
+        printf("Could not recognise command\r\n");
     }
 }

@@ -21,7 +21,7 @@ public:
 
 private:
 
-    BufferedSerial SerialPort;
+    UnbufferedSerial SerialPort;
 
     char _character;
 

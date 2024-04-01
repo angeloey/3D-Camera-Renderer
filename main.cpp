@@ -79,7 +79,6 @@ Object3D Render3D(-200);  // initialize 3D Object
 TS_StateTypeDef Touchstate;                         // Touchscreen-state Struct
 UartInterface UartSerial(USBTX, USBRX, 115200);
 
-
     // Initialization, Touchscreen Button Objects
 Button ButtonIncreaseRotationX(420, 460, 52, 92, LCD_COLOR_RED, LCD_COLOR_YELLOW, 1, Touchstate);               // Rotate around z axis
 Button ButtonDecreaseRotationX(420, 460, 180, 220, LCD_COLOR_RED, LCD_COLOR_YELLOW, 2, Touchstate);
@@ -233,7 +232,7 @@ void rotatingCubeDemo(void){
     Render3D.Vertices.x[7] = -40; Render3D.Vertices.y[7] = 40; Render3D.Vertices.z[7] = -40;  // back top left
     Render3D.saveVertices();
         // Display the cube at every angle from 0 to 360 along an axis. for 361 so it ends at 360
-    for(int j = 0; j < 361; j++){
+    for(int j = 0; j < 361; j += 3){
         Render3D.rotateVertices(j, rotationAxis);
         Render3D.generateProjected();
         drawDebugCube();
@@ -337,7 +336,6 @@ void tsButtonThreadFunction(void){
     }
 }
 
-
 //----------------------------Main stuff----------------------------------------------------------
 
     // Main
@@ -358,8 +356,9 @@ int main(){
         // Initialize touchscreen
     BSP_TS_Init(480, 272);
 
+
         // Attatch ticker to this flag. Using this demo as a splash screen
-    //TickerUpdateScreen.attach(rotatingCubeDemo, 1ms); // 50Hz
+    TickerUpdateScreen.attach(rotatingCubeDemo, 1ms); 
 
 
     // Do nothing here until a flag is set
@@ -369,7 +368,7 @@ int main(){
         if(rotateTouchFlag == true){
                 // Relinquish control of Semaphore so TSButton thread can run
             SemaphoreTSButtons.release();
-                // Attatch thread to monitor TS Buttons and rotate render accordingly
+                // Attatch thread to monitor TS Buttons and rotate render accordingly, does nothing once thread is started.
             ThreadTSButtons.start(tsButtonThreadFunction);
                 // Generate coordinates, Clear Object, Draw image. (Only clear immidiately before drawing to reduce strobing)
                 // Buttons are not redrawn, But also not cleared. Faster. (Exception > Sliders)
@@ -392,7 +391,7 @@ int main(){
             // Scanning Routine, progress one step (causes mutex if in ISR)
         if(progressScanFlag == true){
                 // Take semaphore so TSButtons cant run
-            SemaphoreTSButtons.acquire();
+            SemaphoreTSButtons.try_acquire();
                 // Update peripheral data. Clear lcd between layers
             updatePeripherals(IR.getDistance(), desiredScanAngle, depthMapLayer, RangePot.readVoltage());
             (scanningClockwise == true) ? desiredScanAngle++ : desiredScanAngle--;
@@ -420,14 +419,14 @@ int main(){
             Render3D.Vertices.z[pixelIndex] = (int16_t)(rangeCutoff / 2) - round(IR.lastDistance());
             if(IR.lastDistance() >= rangeCutoff) {Render3D.Vertices.z[pixelIndex] = -(int16_t)(rangeCutoff / 2);}
             pixelIndex--;
-            draw3dObjectFlag = true; // Maybe temporary? Draws 3d object as it is scanned if true
+            draw3dObjectFlag = true; // Draws 3d object as it is scanned
             progressScanFlag = false;
         }
 
             // Draw object in 3d (Dont want this in ISR, lots of operations)
         if(draw3dObjectFlag == true){
                 // Take semaphore so TSButtons cant run
-            SemaphoreTSButtons.acquire();
+            SemaphoreTSButtons.try_acquire();
             if(spinRenderFlag == true){
                 for(int j = 0; j < 360; j++){
                     Render3D.rotateVertices(j, rotationAxis);
@@ -488,8 +487,7 @@ int main(){
             //BSP_LCD_ClearStringLine(8);
             BSP_LCD_DisplayStringAt(0, LINE(9), (uint8_t *)&text, LEFT_MODE);
         }
-
-            // process serial input
+            // Process Uart input (if any)
         UartSerial.processInput();
     }
 }
