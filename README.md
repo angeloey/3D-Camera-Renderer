@@ -117,7 +117,8 @@ A device which scans a scene along the X and Y axis, while recording Z axis data
 Basic operation:
 The device uses a stepper motor and a servo to take range measurements in increments of 1 degrees, in a 90x90 degree FOV.\
 The range measurements are made using an IR Sensor, the maximum range of which can be configured using an potentiometer.\
-During and after completion of the scan, the data recorded is used to represent the scanned scene on the LCD Screen. The user can interact with a 3D render of the scanned scene via the touchscreen, or by selecting an option to automaticcaly rotate the render via the rotary encoder menu.
+During and after completion of the scan, the data recorded is used to represent the scanned scene on the LCD Screen. The user can interact with a 3D render of the scanned scene via the touchscreen, or by selecting an option to automaticcaly rotate the render via the rotary encoder menu.\
+Uart Commands can also be used to start a scan remotely.
 
 The system also contains customization options such a colour slider, and fov adjustment, which are modified in their corresponding menu via the touchscreen interface.
 
@@ -132,12 +133,14 @@ Component List:
 STM32f74NG-DISCO
 
 Inputs:
+ - Uart Serial
  - Potentiometer - NHP22
  - Rotary Encoder - EC11
  - IR Range Sensor - GP2Y0A21YK
  - Touchscreen - STM32F74NG-DISCO
 
 Outputs:
+ - Uart Serial
  - LCD Screen - STM32F74NG-DISCO
  - Servo Motor - SG90
  - Stepper Motor - PJJ051ZA-P
@@ -159,28 +162,68 @@ MbedOS Docs: https://os.mbed.com/docs/mbed-os/v6.16/introduction/index.html
 
 ## 3 - Embedded Code Implementation and Architechture
 
-### Design/Implementation/Structure Overview
-todo
+### Structure Overview
+
+The system uses a combination of hard and soft interrupts, polling, and multithreading.
+This was an intentional design choice in order to demonstrate/implement a wider range of techniques.
+Hardware interrupts are used to control the physical IO of the device, such as the rotary encoder & menu navigation.
+Software interrupts (Tickers) are used to progress through the scanning process, as well as to refresh the LCD display.
+The touchscreen interface is handled by its own dedicated thread, running in paralell to the main thread of the device. Semaphores are used to manage the individual threads, and to ensure a thread only uses system resources when necesary.
+A polling scheme is used to manage the UART interface. 
+A flag polling system is also used to manage routines triggered by interrupts without executing them inside the ISR, both to avoid unwanted mutex locks,\ 
+and to adhere to best practices (i.e. no delays or lengthy functions inside the ISR).
+
+Functionality of peripheral devices is contained and managed by individual Objects & corresponding libraries.
+
+List and explain the independent tasks your software system handles, and if the task has any real-
+time constraints or priorities. Explain if and how your system is responsive to each of the tasks.
 
 ### Tasks Handled by Software
-todo
+
+####Scene/Object Scanning:
+Description: The scanning routine is responsible for triggering & reading peripheral devices such as the stepper motor, servo, IR sensor,
+and potentiometer. And displaying the progress of the scan to the user.
+        
+Real-time Constraints: During scanning data is collected from these peipherals, and output output to the motors in realtime as the scan progresses.
+A 2D representation of the scene, as well as a 3D render of the scanned object is updated in realtime to indicate scan progress to the user.
+        
+Responsiveness: The system only allocates resources to areas required by this routine as and when they are needed. These resources are managed by a           series of flags set and unset by the Scanning routine as the scan progresses.
+
+####Hardware Interface Interaction:
+Description: A rotary encoder is used to cycle through a menu, which provides primary method of user interaction with the system.
+        
+Real-time Constraints: This is handled using hardware interrupts, and will take priority over all tasks so that the user can control the device               without hinderence, with the exception of the scanning routine. If the scanning routine is currently running, the vertices from the last successfull         scan are loaded into the vertex buffer before executing any instructions, to avoid any unfinished scans being loaded by the renderer.
+        
+Responsiveness: As mentioned above, this is handled by hardware interrupts to provide immediate response to user interaction.
+
+####Touch Interface:
+Description: Detecting touch on the LCD in specific areas, and executing tasks accordingly. The touch interface consists of 9 touch buttons used to           rotate a scanned object in 3D, as well as to alter the camera focal length of the renderer. Additionally a slider is also used to change the draw             colour of the system.
+        
+Real-time Constraints: Handled by its own dedicated thread that runs alongside the main thread of the system in order to respond to user interaction\         in realtime. This was intentional in order to demonstrate a wider range of technologies. Semaphores are used to ensure that the touch\        interface thread only consumes system resources when touchscreen buttons are visible on the screen.
+        
+Responsiveness: Since it is handled by its own thread, responsiveness to touch inputs is immediate, and has support for multiple simultaneous touches
+
+
 
 ### Source Code Authors
 Files written by me:\
- - Anything in a folder labelled "My-X-Lib"
+ - Everything in a folder labelled "My-X"
  - main.cpp
- - utils.h utils.cpp
- - irSense.h irSense.cpp
- - pot.h pot.cpp
  - README.md
+ - Unit tests inside folder TESTS
+ All files are labelled with Name and SID as top comments.
 
 Third-Party Code:\
  - BSP_DISCO_F746NG.lib
+ - MbedOS
 
 ### Practical Embedded Considerations
-todo
 
-Originally made using an ultrasonic sensor i had and a library for this sensor sourced from mbed.org, output was noisy and I intend to write all libraries for components myself. Solution: replaced with IR range sensor (much less noisy output) and wrote library from scratch (My-IR-Lib).
+The scan system was originally made using an ultrasonic sensor, and a library for this sensor sourced from mbed.org, however the output was noisy and I intend to write all libraries for components myself. To solve this issue replaced with IR range sensor (much less noisy output) and wrote library from scratch (My-IR-Lib).
+
+
+
+
 
 
 
