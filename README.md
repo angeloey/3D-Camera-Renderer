@@ -16,33 +16,34 @@ Satisfy all marking criteria to a maximum
 
 #### Complexity (Technologies):
 the goal of the project will be to develop the aforementioned embedded system using a range of technologies as to satisfy the assignment criteria.\
-The system will purposely include a range of technologies, even in scenarios where it would traditionally make sense to use multiple instances of a\
-single technology, for example: instead of using two stepper motors (one for x movement and one for y movement), this project will make use of a\
-stepper motor for x movement and a servo motor for y movement. or by using a rotary encoder and a potentiometer, where two potentiometers would suffice.\
-While this may not be the most practical approach, it affords me the opportunity to write a library for, and implement the use of more technologies which\ will better aid the achievement of the following excerpt from the marking criteria:\
+The system will purposely include a range of technologies, even in scenarios where it would traditionally make sense to use multiple instances of a
+single technology, for example: instead of using two stepper motors (one for x movement and one for y movement), this project will make use of a
+stepper motor for x movement and a servo motor for y movement.\
+or by using a rotary encoder and a potentiometer, where two potentiometers would suffice.\
+While this may not be the most practical approach, it affords me the opportunity to write a library for, and implement the use of more technologies which will better aid the achievement of the following excerpt from the marking criteria:
 
-"a wide range of complex\
+*"a wide range of complex\
 input and output devices some of\
 which we may not have used in\
 the tutorial material, all working\
-as expected."
+as expected."*
 
 #### Version Control (Regular Commits and a Clear Workflow):
-Another goal of the project is to provide a meaningful and well commented/documented update to the repository at regular intervals.\ 
-(I will aim for daily commits, however: time waits for no man.)\
-Any periods without a commit will be compensated for in magnitude or quantity once updates resume.\
-There are 27 days between the start of this project on March 6th, and the due date April 2nd, therefore I will ensure there are at MINIMUM, 27 commits of\
-substanstial size, quality, or progress before April 2nd.\
-Each commit will aim to demonstrate a clear direction and progress route through the projects development, i.e. evidence i havent just copied a load of\
-stuff i dont understand from stackoverflow.\
+Another goal of the project is to provide a meaningful and well commented/documented update to the repository at regular intervals. \ 
+(I will aim for daily commits, however: life waits for no man.) \
+Any periods without a commit will be compensated for in magnitude or quantity once updates resume. \
+There are 27 days between the start of this project on March 6th, and the due date April 2nd, therefore I will ensure there are at MINIMUM, 27 commits of
+substanstial size, quality, or progress before April 2nd. \
+Each commit will aim to demonstrate a clear direction and progress route through the projects development, i.e. evidence i havent just copied a load of
+stuff i dont understand from stackoverflow.
 
-I consider a meaningful update to be along the lines of, but not limited to, the following :\
+I consider a meaningful update to be along the lines of, but not limited to, the following :
 
- - Functional progress in, or the completion of, a library for a component (.h and .cpp files in folder designated: "My-X-Lib").\
- - Well commented, significant progress on the functionality of the project.\
- - Significant progress in, or beginning of, the Implementation of a new technology (a functional addition to debug screen for example.).\
- - "Housekeeping": formatting, commenting, & encapsulating code to better reflect OOP practices etc.\
- - Checkoints, functional milestones, or working implementation of a feature, such as a demo (i.e. "50Hz Rotating Cube Demo" on March 18th) .\
+ - Functional progress in, or the completion of, a library for a component (.h and .cpp files in folder designated: "My-X-Lib"). 
+ - Well commented, significant progress on the functionality of the project. 
+ - Significant progress in, or beginning of, the Implementation of a new technology (a functional addition to debug screen for example.).
+ - "Housekeeping": formatting, commenting, & encapsulating code to better reflect OOP practices etc.
+ - Checkoints, functional milestones, or working implementation of a feature, such as a demo (i.e. "50Hz Rotating Cube Demo" on March 18th).
 
 TL;DR:
 Regular updates of some significance, with an accurate commit message.\
@@ -51,58 +52,56 @@ Clear workflow and direction should be visibile throughout commit history (once 
 
 this is with the intention of achieving the following assignment criteria excerpt:\
 
-"Evidence of regular daily\
+*"Evidence of regular daily\
 commits over a longer time\
 frame. Demonstrates clear\
 incremental progress with logical\
-commit messages for features etc."
+commit messages for features etc."*
 
-Note: Marking criteria also states that commits should contain gradual increments in the magnitude of "__INDIVIDUAL LINES OF CODE__"! While I am in no\
-position to dispute this I hope this is assessed *pro rata* given how another criteria is "Functionality and Complexity.\ 
-Am I to commit a non-working chunk of code without testing and re-writing it first?
 
 #### Code Quality:
-Write practical code and follow best practices throughout all aspects of the assignment, including but not limited to things such as:\
+Write practical code and follow best practices throughout all aspects of the assignment, including but not limited to things such as:
 
- - dont use delays in an interrupt, dont use GOTO: etc.\
- - dont name variables things like: "foo", "bar", and "var1", code should be "self documenting" and readable.\
- - use MEANINGFUL comments as a form as documentation, no functions without comments, but also dont have a useless comment on every single line.\
- - need to call the same bit of code many many times? PUT IT IN A FUNCTION/CLASS/LIBRARY.\
- - camelCase is king.\
- - dont use uint32_t where uint8_t would suffice. not exclusive to integers. (Exception: Chris said it's ok to "throw floats at it")\
+ - dont use delays in an interrupt, dont use GOTO: etc.
+ - dont name variables things like: "foo", "bar", and "var1", code should be "self documenting" and readable.
+ - use MEANINGFUL comments as a form as documentation, no functions without comments, but also dont have a useless comment on every single line.
+ - need to call the same bit of code many many times? PUT IT IN A FUNCTION/CLASS/LIBRARY.
+ - camelCase is king.
+ - dont use uint32_t where uint8_t would suffice. not exclusive to integers. *(Exception: Chris said it's ok to "throw floats at it")*
 
-(I will consider myself exempt from these restrictions during development/debugging, however final code should follow all without exception).\
-the following assignment criteria is self explanitory, I will attempt to be a good code monkey:\
+(I will consider myself exempt from these restrictions during development/debugging, however final code should follow all without exception). \
+the following assignment criteria is self explanitory, I will attempt to be a good code monkey:
 
-"Outstanding tidy code. Good\
+
+*Outstanding tidy code. Good\
 practices being used e.g.\
 encapsulation, meaningful\
 identifiers and an attempt at\
 documentation. Code contains\
-no linting errors or warnings."\
+no linting errors or warnings."*
 
 Additional overlap from the following excerpt:\
 
-"Use of custom classes, objects,\
-and OOP concepts."
+*"Use of custom classes, objects,\
+and OOP concepts."*
 
-Naming Convention/Practices adhered to:
-Variables: camelCase
-User-Defined/Custom Types: PascalCase
-Constants: CAPS_SEPARATED_BY_UNDERSCORES
-Private Member Variables: \_underscorePrefixedCamelCase
-Descriptive Self-Documenting identifiers are mandatory.
+### Naming Convention adhered to:
+Variables: camelCase\
+User-Defined/Custom Types: PascalCase\
+Constants: CAPS_SEPARATED_BY_UNDERSCORES\
+Private Member Variables: \_underscorePrefixedCamelCase\
+Descriptive Self-Documenting identifiers are mandatory. \
 
 #### Complexity & Architechture (Embedded Code)
 
 the following criteria is self explanitory, dont have the entire thing in a while loop:
 
-"The embedded architecture used\
+*"The embedded architecture used\
 likely makes use of a\
 combination of hard and soft\
 interrupts with polling or perhaps,\
 RTOS, multi-threading, event\
-loops, etc."
+loops, etc."*
 
 
 
@@ -133,76 +132,86 @@ Component List:
 STM32f74NG-DISCO
 
 Inputs:
- - Uart Serial
+ - Uart via Serial Port - STM32F74NG-DISCO
  - Potentiometer - NHP22
  - Rotary Encoder - EC11
  - IR Range Sensor - GP2Y0A21YK
  - Touchscreen - STM32F74NG-DISCO
 
 Outputs:
- - Uart Serial
+ - Uart via Serial Port - STM32F74NG-DISCO
  - LCD Screen - STM32F74NG-DISCO
  - Servo Motor - SG90
  - Stepper Motor - PJJ051ZA-P
 
-STM32F74NG-DISCO Datasheet: https://www.farnell.com/datasheets/1944312.pdf
-IR Sensor Datasheet: https://www.sparkfun.com/datasheets/Components/GP2Y0A21YK.pdf
-Potentiometer Datasheet: https://p3america.com/content/pdf/nhp22.pdf
-Rotary Encoder Datasheet: https://www.farnell.com/datasheets/1837001.pdf
-Servo Datsheet: https://static.rapidonline.com/pdf/37-1330t.pdf
-Stepper Motor Datsheet: University Provided, cannot find information online
+STM32F74NG-DISCO Datasheet: https://www.farnell.com/datasheets/1944312.pdf \
+IR Sensor Datasheet: https://www.sparkfun.com/datasheets/Components/GP2Y0A21YK.pdf \
+Potentiometer Datasheet: https://p3america.com/content/pdf/nhp22.pdf \
+Rotary Encoder Datasheet: https://www.farnell.com/datasheets/1837001.pdf \
+Servo Datsheet: https://static.rapidonline.com/pdf/37-1330t.pdf \
+Stepper Motor Datsheet: University Provided, cannot find information online, generic stepper operation 
 
 
-Connection Diagram:
+Connection Diagram: \
 ![image](https://github.coventry.ac.uk/storage/user/6796/files/ee9ec413-ffa5-4819-95da-15ec06ea4bdf)
 
 
-System Runs on MbedOS 6
-MbedOS Docs: https://os.mbed.com/docs/mbed-os/v6.16/introduction/index.html
+System Runs on MbedOS 6 \
+MbedOS Docs: https://os.mbed.com/docs/mbed-os/v6.16/introduction/index.html 
 
 ## 3 - Embedded Code Implementation and Architechture
 
 ### Structure Overview
 
-The system uses a combination of hard and soft interrupts, polling, and multithreading.
-This was an intentional design choice in order to demonstrate/implement a wider range of techniques.
-Hardware interrupts are used to control the physical IO of the device, such as the rotary encoder & menu navigation.
-Software interrupts (Tickers) are used to progress through the scanning process, as well as to refresh the LCD display.
-The touchscreen interface is handled by its own dedicated thread, running in paralell to the main thread of the device. Semaphores are used to manage the individual threads, and to ensure a thread only uses system resources when necesary.
-A polling scheme is used to manage the UART interface. 
-A flag polling system is also used to manage routines triggered by interrupts without executing them inside the ISR, both to avoid unwanted mutex locks,\ 
-and to adhere to best practices (i.e. no delays or lengthy functions inside the ISR).
+The system uses a combination of hard and soft interrupts, polling, and multithreading. \
+This was an intentional design choice in order to demonstrate/implement a wider range of techniques. \
+Hardware interrupts are used to control the physical IO of the device, such as the rotary encoder & menu navigation. \
+Software interrupts (Tickers) are used to progress through the scanning process, as well as to refresh the LCD display. \
+The touchscreen interface is handled by its own dedicated thread, running in paralell to the main thread of the device. Semaphores are used to manage the individual threads, and to ensure a thread only uses system resources when necesary. \
+A polling scheme is used to manage the UART interface.  \
+A flag polling system is also used to manage routines triggered by interrupts without executing them inside the ISR, both to avoid unwanted mutex locks, 
+and to adhere to best practices (i.e. no delays or lengthy functions inside the ISR). 
 
-Functionality of peripheral devices is contained and managed by individual Objects & corresponding libraries.
-
-List and explain the independent tasks your software system handles, and if the task has any real-
-time constraints or priorities. Explain if and how your system is responsive to each of the tasks.
+Functionality of peripheral devices is contained and managed by individual Objects & corresponding libraries. 
 
 ### Tasks Handled by Software
 
-####Scene/Object Scanning:
+### Scene/Object Scanning:
 Description: The scanning routine is responsible for triggering & reading peripheral devices such as the stepper motor, servo, IR sensor,
 and potentiometer. And displaying the progress of the scan to the user.
         
 Real-time Constraints: During scanning data is collected from these peipherals, and output output to the motors in realtime as the scan progresses.
 A 2D representation of the scene, as well as a 3D render of the scanned object is updated in realtime to indicate scan progress to the user.
         
-Responsiveness: The system only allocates resources to areas required by this routine as and when they are needed. These resources are managed by a           series of flags set and unset by the Scanning routine as the scan progresses.
+Responsiveness: The system only allocates resources to areas required by this routine as and when they are needed. These resources are managed by a series of flags set and unset by the Scanning routine as the scan progresses.
 
-####Hardware Interface Interaction:
+### Hardware Interface Interaction:
 Description: A rotary encoder is used to cycle through a menu, which provides primary method of user interaction with the system.
         
-Real-time Constraints: This is handled using hardware interrupts, and will take priority over all tasks so that the user can control the device               without hinderence, with the exception of the scanning routine. If the scanning routine is currently running, the vertices from the last successfull         scan are loaded into the vertex buffer before executing any instructions, to avoid any unfinished scans being loaded by the renderer.
+Real-time Constraints: This is handled using hardware interrupts, and will take priority over all tasks so that the user can control the device               without hinderence, with the exception of the scanning routine. If the scanning routine is currently running, the vertices from the last successfull scan are loaded into the vertex buffer before executing any instructions, to avoid any unfinished scans being loaded by the renderer.
         
 Responsiveness: As mentioned above, this is handled by hardware interrupts to provide immediate response to user interaction.
 
-####Touch Interface:
-Description: Detecting touch on the LCD in specific areas, and executing tasks accordingly. The touch interface consists of 9 touch buttons used to           rotate a scanned object in 3D, as well as to alter the camera focal length of the renderer. Additionally a slider is also used to change the draw             colour of the system.
+### Touch Interface:
+Description: Detecting touch on the LCD in specific areas, and executing tasks accordingly. The touch interface consists of 9 touch buttons used to rotate a scanned object in 3D, as well as to alter the camera focal length of the renderer. Additionally a slider is also used to change the draw colour of the system.
         
-Real-time Constraints: Handled by its own dedicated thread that runs alongside the main thread of the system in order to respond to user interaction\         in realtime. This was intentional in order to demonstrate a wider range of technologies. Semaphores are used to ensure that the touch\        interface thread only consumes system resources when touchscreen buttons are visible on the screen.
+Real-time Constraints: Handled by its own dedicated thread that runs alongside the main thread of the system in order to respond to user interaction in realtime. \ This was intentional in order to demonstrate a wider range of technologies. Semaphores are used to ensure that the touch interface thread only consumes system resources when touchscreen buttons are visible on the screen.
         
 Responsiveness: Since it is handled by its own thread, responsiveness to touch inputs is immediate, and has support for multiple simultaneous touches
 
+### Uart Interface:
+Description: A barebones uart interface is used to trigger the scanning routine remotely, upon recieveing a newline (\n) character via the serial port, the device compares the characters stored in its character buffer to a list of known commands, and executes hte corresponding command accordingly. If none are found, it notfies the user that it does not recognise the recived command. This was included primarily to better satisfy the marking criteria and demonstrate the use of serial communication, but finds itself analagous to existing embedded systems where remote activation is a desired feature.
+
+Real-time Constraints: Characters are added to a buffer as and when they are recieved by the device, not particularly time-critical and is polled once any set flags have been acknowledged.
+
+Responiveness: No noticeable delay by the user. Effectively immediate from a humans POV.
+
+### 3D Rendering:
+Description: The device is capable of representing the data recorded by the scanning routine
+
+Real-time Constraints:
+
+Responsiveness:
 
 
 ### Source Code Authors
