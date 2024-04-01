@@ -117,8 +117,9 @@ void startScanUart(void){
 
     // Select & Execute menu options when button is pressed // Triggered by interrupts in rotary lib
 void rotaryButtonPressed(void){
-    BSP_LCD_Clear(LCD_COLOR_BLACK);
-    switch(menuCounter){
+    for(int i = 0; i < 2; i++){
+        BSP_LCD_Clear(LCD_COLOR_BLACK);
+        switch(menuCounter){
         case 0:
             TickerUpdateScreen.detach();
             TickerNextStep.detach();
@@ -161,6 +162,7 @@ void rotaryButtonPressed(void){
         default:    // should never happen
             BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Something went wrong (rotaryButtonPressed)", CENTER_MODE);
             break;
+        }
     }
 }
 
