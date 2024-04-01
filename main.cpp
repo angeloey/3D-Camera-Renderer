@@ -4,7 +4,7 @@
 #include "stm32746g_discovery_lcd.h"
 #include "stm32746g_discovery_ts.h"
 #include "math.h"
-
+// My Libs
 #include "irSense.h"
 #include "myUtils.h"
 #include "pot.h"
@@ -15,7 +15,7 @@
 #include "myButtons.h"
 #include "uartCommands.h"
 
-    // Magic Numbers / Constants                 // using constexpr over #define for evaluation at compile time. considered better practice in modern c++
+    // Magic Numbers / Constants                 // Using constexpr over #define for evaluation at compile time. Considered better practice in modern c++
 namespace constants{
         // Menu/Option Constants
     constexpr int8_t MAX_MENU_ENTRIES = 4 -1;
@@ -105,7 +105,6 @@ Mutex MutexTSButtons;         // Mutex lock for when reset button needs to load 
 Semaphore SemaphoreTSButtons(1, 1); // Semaphore, used to control execution of TS Button thread
 
 //----------------------------Function definitons--------------------------------------------
-
     // Used to start scan via uart
 void startScanUart(void){
     BSP_LCD_Clear(LCD_COLOR_BLACK);
@@ -237,7 +236,6 @@ void updatePeripherals(float currentIrDistance, float currentScanAngle, uint8_t 
     char text [64];
          // Clear line. Display scan progress. Draw 2D views
     sprintf((char*)text, "Distance: %f Layer: %d Angle: %f MaxRange: %d", currentIrDistance, currentScanLayer, currentScanAngle, rangeCutoff);
-    //BSP_LCD_ClearStringLine(LINE(0));
     BSP_LCD_DisplayStringAt(0, LINE(0), (uint8_t *)&text, LEFT_MODE);
     drawRadarView(currentIrDistance, currentScanAngle);
     drawDepthMap(currentIrDistance, currentScanAngle, currentScanLayer, rangeCutoff);
@@ -294,6 +292,7 @@ void drawDebugCube(void){
     BSP_LCD_DrawLine(Render3D.xProjected[7]+constants::OFFSET_3D_X, Render3D.yProjected[7]+constants::OFFSET_3D_Y, Render3D.xProjected[4]+constants::OFFSET_3D_X, Render3D.yProjected[4]+constants::OFFSET_3D_Y);    
 }
 
+    // Used to eliminate flickering/tearing when rendering objects in 3D. "Double Buffering".
 void toggleLCDLayer(void){
     if(activeLCDLayer == 1){
         BSP_LCD_SelectLayer(0); BSP_LCD_SetLayerVisible(1, ENABLE); BSP_LCD_SetLayerVisible(0, DISABLE);
@@ -371,7 +370,7 @@ void tsButtonThreadFunction(void){
     }
 }
 
-//----------------------------Main stuff----------------------------------------------------------
+//----------------------------Main polling loop----------------------------------------------------------
 
     // Main
 int main(){
@@ -398,18 +397,18 @@ int main(){
     BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
     BSP_LCD_Clear(LCD_COLOR_BLACK);
 
-
         // Initialize touchscreen
     BSP_TS_Init(480, 272);
 
-    BSP_LCD_SelectLayer(0); BSP_LCD_SetLayerVisible(0, ENABLE); BSP_LCD_SetLayerVisible(1, DISABLE);
         // Attatch ticker to this flag. Using this demo as a splash screen
+    BSP_LCD_SelectLayer(0); BSP_LCD_SetLayerVisible(0, ENABLE); BSP_LCD_SetLayerVisible(1, DISABLE);
     TickerUpdateScreen.attach(rotatingCubeDemo, 1ms); 
 
     // Do nothing here until a flag is set
     while(1) {
 
-        while (!(LTDC->CDSR & LTDC_CDSR_VSYNCS)) {}     // Wait for v-sync. (Magic.)
+             // Wait for v-sync before drawing next frame. (Magic.)
+        while (!(LTDC->CDSR & LTDC_CDSR_VSYNCS)) {}
 
             // Manual control over 3D render (Slow)
         if(rotateTouchFlag == true){
@@ -419,7 +418,7 @@ int main(){
                 // Attatch thread to monitor TS Buttons and rotate render accordingly, does nothing once thread is started.
             ThreadTSButtons.start(tsButtonThreadFunction);
                 // Generate coordinates, Clear Object, Draw image. (Only clear immidiately before drawing to reduce strobing)
-                // Buttons are not redrawn, But also not cleared. Faster. (Exception > Sliders)
+                // Buttons are not redrawn, But also not cleared. Faster. (Exception -> Sliders)
             Render3D.generateProjected();
             //SCB_CleanDCache();
             if(loadTestCubeFlag == true){
@@ -439,7 +438,7 @@ int main(){
             BSP_LCD_SelectLayer(1); BSP_LCD_SetLayerVisible(1, ENABLE); BSP_LCD_SetLayerVisible(0, DISABLE);
                 // Take semaphore so TSButtons cant run
             SemaphoreTSButtons.try_acquire();
-                // Update peripheral data. Clear lcd between layers
+                // Update peripheral data. Clear LCD between layers
             updatePeripherals(IR.getDistance(), desiredScanAngle, depthMapLayer, RangePot.readVoltage());
             (scanningClockwise == true) ? desiredScanAngle++ : desiredScanAngle--;
             if(desiredScanAngle >= 90 || desiredScanAngle < 0){
@@ -459,7 +458,7 @@ int main(){
                 }
             }
                 // Move Stepper and Servo. Store xyz Coordinates
-            if(desiredScanAngle %4 == 0) {Stepper.step(scanningClockwise, 1, 7);} // Temporary? Uni only has crap Steppers. (step angle too large, even with half step)
+            if(desiredScanAngle %4 == 0) {Stepper.step(scanningClockwise, 1, 7);} // Uni only has crap Steppers. (step angle too large, even with half step)
             Servo.writePos(depthMapLayer);
             Render3D.Vertices.y[pixelIndex] = -45 + depthMapLayer;
             Render3D.Vertices.x[pixelIndex] = -45 + desiredScanAngle;
@@ -470,7 +469,7 @@ int main(){
             progressScanFlag = false;
         }
 
-            // Draw object in 3d (Dont want this in ISR, lots of operations)
+            // Draw scene/object in 3D (Dont want this in ISR, lots of operations).
         if(draw3dObjectFlag == true){
             BSP_LCD_SelectLayer(1); BSP_LCD_SetLayerVisible(1, ENABLE); BSP_LCD_SetLayerVisible(0, DISABLE);
                 // Take semaphore so TSButtons cant run
@@ -505,33 +504,25 @@ int main(){
 
             // Draw debug information on top of current screen. Toggleable.
         if(drawDebugFlag == true){
-            while (!(LTDC->CDSR & LTDC_CDSR_VSYNCS)) {}     // Wait for v-sync. (Magic.)
+            while (!(LTDC->CDSR & LTDC_CDSR_VSYNCS)) {}     // Wait for v-sync before drawing next frame. (Magic.)
             BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
             char text [50];
             sprintf((char*)text, "IR Distance: %.2f    Voltage: %.2f", IR.getDistance(), IR.readVoltage()); 
-            //BSP_LCD_ClearStringLine(2);
             BSP_LCD_DisplayStringAt(0, LINE(2), (uint8_t *)&text, LEFT_MODE);
             float potVal = RangePot.readVoltage();
             sprintf((char*)text, "Range-Pot Distance: %d    Voltage: %.2f", Utils.valMap(potVal, 0, 3.3, 0, 100), potVal); 
-            //BSP_LCD_ClearStringLine(3);
             BSP_LCD_DisplayStringAt(0, LINE(3), (uint8_t *)&text, LEFT_MODE);
             sprintf((char*)text, "Encoder Clockwise: %d", Encoder.getClockwise()); 
-            //BSP_LCD_ClearStringLine(4);
             BSP_LCD_DisplayStringAt(0, LINE(4), (uint8_t *)&text, LEFT_MODE);
             sprintf((char*)text, "Servo Position: %.2f", Servo.readPos());
-            //BSP_LCD_ClearStringLine(5);
             BSP_LCD_DisplayStringAt(0, LINE(5), (uint8_t *)&text, LEFT_MODE);
             sprintf((char*)text, "Scan Clockwise: %d    Angle: %d   Layer: %d", scanningClockwise, desiredScanAngle, depthMapLayer);
-            //BSP_LCD_ClearStringLine(6);
             BSP_LCD_DisplayStringAt(0, LINE(6), (uint8_t *)&text, LEFT_MODE);
             sprintf((char*)text, "Radar Offset X: %d   Y: %d", constants::OFFSET_RADAR_X, constants::OFFSET_RADAR_Y); 
-            //BSP_LCD_ClearStringLine(7);
             BSP_LCD_DisplayStringAt(0, LINE(7), (uint8_t *)&text, LEFT_MODE);
             sprintf((char*)text, "DepthMap Offset X: %d   Y: %d", constants::OFFSET_DEPTHMAP_X, constants::OFFSET_DEPTHMAP_Y); 
-            //BSP_LCD_ClearStringLine(8);
             BSP_LCD_DisplayStringAt(0, LINE(8), (uint8_t *)&text, LEFT_MODE);
             sprintf((char*)text, "3D Array Index %d", pixelIndex); 
-            //BSP_LCD_ClearStringLine(8);
             BSP_LCD_DisplayStringAt(0, LINE(9), (uint8_t *)&text, LEFT_MODE);
         }
             // Process Uart input (if any)
@@ -539,6 +530,3 @@ int main(){
     }
 }
 
-// Stepper angle is 3.6 in half step, 7.2 in full step //ish, cant find data online
-// TODO:
-// https://github.com/cbm80amiga/ST7735_3d_filled_vector/blob/master/gfx3d.h
