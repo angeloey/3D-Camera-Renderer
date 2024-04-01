@@ -122,7 +122,7 @@ Uart Commands can also be used to start a scan remotely.
 The system also contains customization options such a colour slider, and fov adjustment, which are modified in their corresponding menu via the touchscreen interface.
 
 Verification of Successful Operation:
-The fundamental operation of the system can be considered successful if a scene/object can be scanned by the device, producing a render which can be interacted with by user. I.e. can be rotate around all 3 Axis at will.
+The fundamental operation of the system can be considered successful if a scene/object can be scanned by the device, producing a render which can be interacted with by user. I.e. can be rotate around all 3 Axis at will. A wide array of diferent technologies and peripherals will be used by the system to achieve this, and will work together without error or conflict.
 
 
 ## 2 - Hardware Design
@@ -229,16 +229,16 @@ __Responsiveness__: When rotating and inspecting the render, the system becomes 
 
 
 ### Source Code Authors
-Files written by me:\
+Files written by me: \
  - Everything in a folder labelled "My-X"
  - main.cpp
  - README.md
- - Unit tests inside folder TESTS
+ - Unit tests inside folder TESTS (Made from boilerplate provided in mbed docs, link to boilerplate provided as comments inside each file).
  All files are labelled with Name and SID as top comments.
 
-Third-Party Code:\
+Third-Party Code: \
  - BSP_DISCO_F746NG.lib
- - MbedOS
+ - Mbed-OS.lib
 
 ### Practical Embedded Considerations
 
@@ -246,8 +246,12 @@ The scan system was originally made using an ultrasonic sensor, and a library fo
 
 In order to target the IR Range sensor at a specific point, a Mount was designed and 3D-Printed, the latest version of this model in STL file is included in the repository in folder: 3D Print Files
 
+Rotating a perspective projection render in 3 dimensions is computationally expensive, and somewhat out of reach for a device such as the STM32F7 to do in any reasonable amount of time. However this system takes advantage of a "workaround". Provided you only rotate around one axis at a time, a perspective projection can be rotated using the 2D rotation matrix, which is much less computationally expensive.
+To provide rotation around all 3 axis, this system rotates around one axis, saves the result to a buffer, and then rotates the resulting buffer around another axis sequentially. this workaround means that the system can appear to rotate a render around 3 axis simultaneous, albeit while taking 3 times as long to do so.
 
-
+Functionality was written into the stepper library to enable microstepping, however the STM32f7 Board being used for this system only has 2 onboard ADC's and the implementation (the only way i could think of to do it in software) required 4 ADC's to operate. 
+As the step size of the provided stepper motor is too large for the degree of accuracy desired, the system only rotates the stepper every 4 degrees instead of every 1 degree, and takes 4 measurements during its travel time to acquire the closest approximation I could get. 
+I am unable to find any information on this specific stepper online, but measuring its step size by hand, it appears to have a step size of ~7.5 Degrees, so I am using half stepping to get this down to ~4, and using the aforementioned method to compensate for it.
 
 
 
@@ -255,7 +259,15 @@ In order to target the IR Range sensor at a specific point, a Mount was designed
 
 ## 4 - Evaluation 
 ### Implementation Successfulness
-todo
+The system achieves the criteria outlined in the proposal, it is capable of scanning scenes or objects and generating a 3D render which the user can freely rotate along all three axis. It utilises a wide range of technologies and peripherals, which operate without conflict. 
+The system can be considered a sucessful prototype.
+
+Upon reflection, some shortcomings of the device or things I would add given more time include:
+- Ability to export renders to another device (maybe as .STL or similar).
+- The stepper motor used for the project works fine as a proof of concept/prototype however in future iteration i would use a better/more accurate one
+- Create an enclosure or housing for the device (Maybe a battery powered handheld iteration)
+- Create a PCB implementation instead of relying on a breadboard
+- Add greater functionality to the uart interface. a HC-05 module could be used along side a terminal app, to control the device from a phone
 
 ### Group Members:
 Angelo Maoudis 14074479 \
