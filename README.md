@@ -109,7 +109,7 @@ loops, etc."*
 
 ## 1 - Embedded System Proposal
 
-Description: A 3D Camera/Scanner.
+Description: A 3D Scanner.
 A device which scans a scene along the X and Y axis, while recording Z axis data about the scene. A 2D representation of the scene, alongside a 3D render is generated from the recoded data, which the user can interact with to inspect the object/scene post scan. Colour is used to represent depth in the 2d Image.
 
 
@@ -149,8 +149,8 @@ IR Sensor Datasheet: https://www.sparkfun.com/datasheets/Components/GP2Y0A21YK.p
 Potentiometer Datasheet: https://p3america.com/content/pdf/nhp22.pdf \
 Rotary Encoder Datasheet: https://www.farnell.com/datasheets/1837001.pdf \
 Servo Datsheet: https://static.rapidonline.com/pdf/37-1330t.pdf \
-Stepper Motor Datsheet: University Provided, cannot find information online, generic stepper operation 
-
+Stepper Motor Datsheet: University Provided, cannot find information online, generic unipolar stepper operation. \
+ULN2803 Darlington Array Datasheet: https://www.st.com/resource/en/datasheet/uln2801a.pdf
 
 Connection Diagram: \
 ![image](https://github.coventry.ac.uk/storage/user/6796/files/ee9ec413-ffa5-4819-95da-15ec06ea4bdf)
@@ -158,6 +158,8 @@ Connection Diagram: \
 
 System Runs on MbedOS 6 \
 MbedOS Docs: https://os.mbed.com/docs/mbed-os/v6.16/introduction/index.html 
+
+To stay within the "spirit" of the Embedded Systems Programming module, the System opts for software control over hardware control, via the GPIO, ADC, & DAC pins built in to the STM32f746NG-DISCO, with the only exception being the use of a ULN2803 Darlington Array IC which is used as a *driver* the stepper motor. Stepper motor *control* is achieved via software implementation however.
 
 ## 3 - Embedded Code Implementation and Architechture
 
@@ -177,41 +179,53 @@ Functionality of peripheral devices is contained and managed by individual Objec
 ### Tasks Handled by Software
 
 ### Scene/Object Scanning:
-Description: The scanning routine is responsible for triggering & reading peripheral devices such as the stepper motor, servo, IR sensor,
+__Description__: The scanning routine is responsible for triggering & reading peripheral devices such as the stepper motor, servo, IR sensor,
 and potentiometer. And displaying the progress of the scan to the user.
         
-Real-time Constraints: During scanning data is collected from these peipherals, and output output to the motors in realtime as the scan progresses.
+__Real-time Constraints__: During scanning data is collected from these peipherals, and output output to the motors in realtime as the scan progresses.
 A 2D representation of the scene, as well as a 3D render of the scanned object is updated in realtime to indicate scan progress to the user.
         
-Responsiveness: The system only allocates resources to areas required by this routine as and when they are needed. These resources are managed by a series of flags set and unset by the Scanning routine as the scan progresses.
+__Responsiveness__: The system only allocates resources to areas required by this routine as and when they are needed. These resources are managed by a series of flags set and unset by the Scanning routine as the scan progresses.
 
 ### Hardware Interface Interaction:
-Description: A rotary encoder is used to cycle through a menu, which provides primary method of user interaction with the system.
+__Description__: A rotary encoder is used to cycle through a menu, which provides primary method of user interaction with the system.
         
-Real-time Constraints: This is handled using hardware interrupts, and will take priority over all tasks so that the user can control the device               without hinderence, with the exception of the scanning routine. If the scanning routine is currently running, the vertices from the last successfull scan are loaded into the vertex buffer before executing any instructions, to avoid any unfinished scans being loaded by the renderer.
+__Real-time Constraints__: This is handled using hardware interrupts, and will take priority over all tasks so that the user can control the device               without hinderence, with the exception of the scanning routine. If the scanning routine is currently running, the vertices from the last successfull scan are loaded into the vertex buffer before executing any instructions, to avoid any unfinished scans being loaded by the renderer.
         
-Responsiveness: As mentioned above, this is handled by hardware interrupts to provide immediate response to user interaction.
+__Responsiveness__: As mentioned above, this is handled by hardware interrupts to provide immediate response to user interaction.
 
 ### Touch Interface:
-Description: Detecting touch on the LCD in specific areas, and executing tasks accordingly. The touch interface consists of 9 touch buttons used to rotate a scanned object in 3D, as well as to alter the camera focal length of the renderer. Additionally a slider is also used to change the draw colour of the system.
+__Description__: Detecting touch on the LCD in specific areas, and executing tasks accordingly. The touch interface consists of 9 touch buttons used to rotate a scanned object in 3D, as well as to alter the camera focal length of the renderer. Additionally a slider is also used to change the draw colour of the system.
         
-Real-time Constraints: Handled by its own dedicated thread that runs alongside the main thread of the system in order to respond to user interaction in realtime. \ This was intentional in order to demonstrate a wider range of technologies. Semaphores are used to ensure that the touch interface thread only consumes system resources when touchscreen buttons are visible on the screen.
+__Real-time Constraints__: Handled by its own dedicated thread that runs alongside the main thread of the system in order to respond to user interaction in realtime. \ This was intentional in order to demonstrate a wider range of technologies. Semaphores are used to ensure that the touch interface thread only consumes system resources when touchscreen buttons are visible on the screen.
         
-Responsiveness: Since it is handled by its own thread, responsiveness to touch inputs is immediate, and has support for multiple simultaneous touches
+__Responsiveness__: Since it is handled by its own thread, responsiveness to touch inputs is immediate, and has support for multiple simultaneous touches
 
 ### Uart Interface:
-Description: A barebones uart interface is used to trigger the scanning routine remotely, upon recieveing a newline (\n) character via the serial port, the device compares the characters stored in its character buffer to a list of known commands, and executes hte corresponding command accordingly. If none are found, it notfies the user that it does not recognise the recived command. This was included primarily to better satisfy the marking criteria and demonstrate the use of serial communication, but finds itself analagous to existing embedded systems where remote activation is a desired feature.
+__Description__: A barebones uart interface is used to trigger the scanning routine remotely, upon recieveing a newline (\n) character via the serial port, the device compares the characters stored in its character buffer to a list of known commands, and executes hte corresponding command accordingly. If none are found, it notfies the user that it does not recognise the recived command. This was included primarily to better satisfy the marking criteria and demonstrate the use of serial communication, but finds itself analagous to existing embedded systems where remote activation is a desired feature.
 
-Real-time Constraints: Characters are added to a buffer as and when they are recieved by the device, not particularly time-critical and is polled once any set flags have been acknowledged.
+__Real-time Constraints__: Characters are added to a buffer as and when they are recieved by the device, not particularly time-critical and is polled once any set flags have been acknowledged.
 
-Responiveness: No noticeable delay by the user. Effectively immediate from a humans POV.
+__Responiveness__: No noticeable delay by the user. Effectively immediate from a humans POV.
 
 ### 3D Rendering:
-Description: The device is capable of representing the data recorded by the scanning routine
+__Description__: The device is capable of representing the data recorded by the scanning routine in the form of a weak perspective projection. The files inside folder My-3D-Lib are heavily commented to explain how the 3D rendering of the system is achieved, below is an attempt to illustrate how the "Projected" pixel coordinates are calculated from the vertices recorded by the Scanning routine, for the X axis. This process is repeated for each coordinate recorded (90 x 90 = 8100).
 
-Real-time Constraints:
+![illustration](https://github.coventry.ac.uk/storage/user/6796/files/8975266f-458d-43b4-8f1d-a7de5b1724ef) 
+                           
 
-Responsiveness:
+ Triangles (X, Adjacent, C) and (Xp, Focallength, C) are similar, \
+ therefore: Xp / X  ==  FocalLength / Adjacent \ 
+ thus Xp  ==  (Focallength * X) / Adjacent \
+ Xp (xProjected) is the X coordinate of the pixel intersected when casting a ray from the camera to the object. \
+ Repeat for Y. Process is analagous. \
+ Repeating this process for all scanned coordinates results in a list of XY pixel coordinate which when drawn on the screen \
+ form a weak perspective projection of the scanned Scene/Object. 
+
+__Real-time Constraints__: During scanning, a 3D render of the scene is constructed in realtime as the system records more data. However this render does not need to rotate, and given that the scan operates at a frequency of 20Hz, and each pixel is calculated as its corresponding vertex is obtained in realtime, ample time is available to render the scene in realtime. \
+Once the scan has completed, the object can be rendered, rotated, and inspected by the user. This involves significantly more computational overhead and the frame-rate of the system is limited by the speed at which the FPU can complete these calculations.
+
+__Responsiveness__: When rotating and inspecting the render, the system becomes significantly less responsive, and "Double-Buffering", along with V-Sync was implemented in order to eliminate screen tearing/flickering, as the device cannot calculate and draw all of the projected vertices fast enough to be imperceptible without this.
 
 
 ### Source Code Authors
@@ -230,6 +244,8 @@ Third-Party Code:\
 
 The scan system was originally made using an ultrasonic sensor, and a library for this sensor sourced from mbed.org, however the output was noisy and I intend to write all libraries for components myself. To solve this issue replaced with IR range sensor (much less noisy output) and wrote library from scratch (My-IR-Lib).
 
+In order to target the IR Range sensor at a specific point, a Mount was designed and 3D-Printed, the latest version of this model in STL file is included in the repository in folder: 3D Print Files
+
 
 
 
@@ -242,6 +258,5 @@ The scan system was originally made using an ultrasonic sensor, and a library fo
 todo
 
 ### Group Members:
-Angelo Maoudis 14074479\
-Commits as: maoudisa(University Github) & angeloey (Home Github).\
-Responsible for: Everything if thats an option.z
+Angelo Maoudis 14074479 \
+Commits as: maoudisa(University Github) & angeloey (Home Github). \
