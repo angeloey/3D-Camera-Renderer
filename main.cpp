@@ -13,6 +13,7 @@
 #include "rotaryEncoder.h"
 #include "my3d.h"
 #include "myButtons.h"
+#include "uartCommands.h"
 
     // Magic Numbers / Constants                 // using constexpr over #define for evaluation at compile time. considered better practice in modern c++
 namespace constants{
@@ -76,6 +77,7 @@ Rotary Encoder(D5, D6, D7, &rotaryButtonPressed, &rotaryTurned);    // initializ
 //MicroStepper Stepper(A5, A4, A3, A2, 7.5);        // Cant use microstepping as the board only has 2 DAC outs :(
 Object3D Render3D(-200);  // initialize 3D Object
 TS_StateTypeDef Touchstate;                         // Touchscreen-state Struct
+UartInterface UartSerial(USBTX, USBRX, 115200);
 
 
     // Initialization, Touchscreen Button Objects
@@ -357,7 +359,7 @@ int main(){
     BSP_TS_Init(480, 272);
 
         // Attatch ticker to this flag. Using this demo as a splash screen
-    TickerUpdateScreen.attach(rotatingCubeDemo, 1ms); // 50Hz
+    //TickerUpdateScreen.attach(rotatingCubeDemo, 1ms); // 50Hz
 
 
     // Do nothing here until a flag is set
@@ -486,6 +488,9 @@ int main(){
             //BSP_LCD_ClearStringLine(8);
             BSP_LCD_DisplayStringAt(0, LINE(9), (uint8_t *)&text, LEFT_MODE);
         }
+
+            // process serial input
+        UartSerial.processInput();
     }
 }
 

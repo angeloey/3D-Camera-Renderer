@@ -15,11 +15,13 @@ public:
 
         // Process incoming serial data
     void processInput(void);
-    
+
         // Execute command based on incoming data
     void runCommand(char commandToRun[constants::MAX_COMMAND_LENGTH]);
 
 private:
+
+    BufferedSerial SerialPort;
 
     char _character;
 
