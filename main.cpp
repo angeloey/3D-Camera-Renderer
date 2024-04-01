@@ -41,6 +41,7 @@ void drawDebugCube(void);
 void manualRotation(void);
 void tsButtonThreadFunction(void);
 void toggleLCDLayer(void);
+void startScanUart(void);
 
     // Obtaining XYZ values via scan
 bool scanningClockwise = false; // Scan direction: False = CCW(-X), True = CW(+X) 
@@ -79,7 +80,7 @@ Rotary Encoder(D5, D6, D7, &rotaryButtonPressed, &rotaryTurned);    // initializ
 //MicroStepper Stepper(A5, A4, A3, A2, 7.5);        // Cant use microstepping as the board only has 2 DAC outs :(
 Object3D Render3D(-200);  // initialize 3D Object
 TS_StateTypeDef Touchstate;                         // Touchscreen-state Struct
-UartInterface UartSerial(USBTX, USBRX, 115200);
+UartInterface UartSerial(USBTX, USBRX, 115200, &startScanUart);
 
     // Initialization, Touchscreen Button Objects
 Button ButtonIncreaseRotationX(420, 460, 52, 92, LCD_COLOR_RED, LCD_COLOR_YELLOW, 1, Touchstate);               // Rotate around z axis
@@ -104,6 +105,15 @@ Mutex MutexTSButtons;         // Mutex lock for when reset button needs to load 
 Semaphore SemaphoreTSButtons(1, 1); // Semaphore, used to control execution of TS Button thread
 
 //----------------------------Function definitons--------------------------------------------
+
+    // Used to start scan via uart
+void startScanUart(void){
+    BSP_LCD_Clear(LCD_COLOR_BLACK);
+    TickerUpdateScreen.detach();
+    TickerNextStep.detach();
+        // Attatch ticker to this flag. Increments scan progress
+    TickerNextStep.attach(incrementScan, 20ms); // 50Hz
+}
 
     // Select & Execute menu options when button is pressed // Triggered by interrupts in rotary lib
 void rotaryButtonPressed(void){

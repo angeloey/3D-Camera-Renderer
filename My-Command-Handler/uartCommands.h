@@ -11,7 +11,7 @@ constexpr int16_t MAX_COMMAND_LENGTH = 8;
 
 class UartInterface { 
 public:
-    UartInterface(PinName pinTX, PinName pinRX, uint32_t Baud);
+    UartInterface(PinName pinTX, PinName pinRX, uint32_t Baud, Callback<void(void)> uartFunc);
 
         // Process incoming serial data
     void processInput(void);
@@ -22,6 +22,8 @@ public:
 private:
 
     UnbufferedSerial SerialPort;
+
+    std::function<void(void)> _uartFunc;
 
     char _character;
 

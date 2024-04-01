@@ -4,7 +4,7 @@
 #include <cstdio>
 
     // Constructor, setup serial port
-UartInterface::UartInterface(PinName pinTX, PinName pinRX, uint32_t Baud):SerialPort(pinTX, pinRX, Baud){
+UartInterface::UartInterface(PinName pinTX, PinName pinRX, uint32_t Baud, Callback<void(void)> uartFunc):SerialPort(pinTX, pinRX, Baud), _uartFunc(uartFunc){
 
 }
 
@@ -33,10 +33,10 @@ void UartInterface::processInput(void){
     // Execute command based on recieved data
 void UartInterface::runCommand(char *commandToRun){
         // compare _command string with known commands
-    if(strcmp(commandToRun, "testOne") == 0)
+    if(strcmp(commandToRun, "Scan") == 0)
     {
-        // Do something
-        printf("testOne_Recived\r\n");
+        printf("Starting Scan\r\n");
+        _uartFunc();
 
     }else if (strcmp(commandToRun, "testTwo") == 0)
     {
