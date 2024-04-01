@@ -40,6 +40,7 @@ void rotatingCubeDemo(void);
 void drawDebugCube(void);
 void manualRotation(void);
 void tsButtonThreadFunction(void);
+void toggleLCDLayer(void);
 
     // Obtaining XYZ values via scan
 bool scanningClockwise = false; // Scan direction: False = CCW(-X), True = CW(+X) 
@@ -67,6 +68,7 @@ uint8_t greenArgb = 0xFF;                // ARGB values, used to cycle through A
 uint8_t blueArgb = 0xFF;                 // Default is 0xFF (255) (white)
 uint16_t lastX;                          // Coordinates of last drawn line for radar view, used to overwrite in black without clearing entire radar.
 uint16_t lastY;                          // purely cosmetic.
+int activeLCDLayer = 0;
 
     // Initialization, Peripheral Objects/Structs.
 IrSense IR(A0);                                     // initialize IR sensor, reading from Pin A0
@@ -105,50 +107,54 @@ Semaphore SemaphoreTSButtons(1, 1); // Semaphore, used to control execution of T
 
     // Select & Execute menu options when button is pressed // Triggered by interrupts in rotary lib
 void rotaryButtonPressed(void){
-    BSP_LCD_Clear(LCD_COLOR_BLACK);
-    switch(menuCounter){
-        case 0:
-            TickerUpdateScreen.detach();
-            TickerNextStep.detach();
-                // Attatch ticker to this flag. Increments scan progress
-            TickerNextStep.attach(incrementScan, 20ms); // 50Hz
-            break;
-        case 1:
-            TickerUpdateScreen.detach();
-            TickerNextStep.detach();
-                // Attatch ticker to this flag. Redraws Object
-            TickerUpdateScreen.attach(draw3dObject, 20ms); // 50Hz
-            spinRenderFlag = true;
-            break;
-        case 2:
-            TickerUpdateScreen.detach();
-            TickerNextStep.detach();
-                // Restore 3D object from save
-            Render3D.restoreSave();
-                // Draw buttons
-            BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
-            BSP_LCD_DrawRect(79, 49, 321, 156);
-            ButtonIncreaseRotationX.drawButton(); ButtonDecreaseRotationX.drawButton();
-            ButtonIncreaseRotationY.drawButton(); ButtonDecreaseRotationY.drawButton();
-            ButtonIncreaseRotationZ.drawButton(); ButtonDecreaseRotationZ.drawButton();
-            ButtonIncreaseFov.drawButton(); ButtonDecreaseFov.drawButton();
-            ButtonResetRotation.drawButton();
-            SliderDrawColour.drawButton();
-            BSP_LCD_SetFont(&Font16);
-            BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
-            BSP_LCD_DisplayStringAt(80, 241, (uint8_t*)"fov-", LEFT_MODE);
-            BSP_LCD_DisplayStringAt(15, 241, (uint8_t*)"fov+", LEFT_MODE);
-            BSP_LCD_DisplayStringAt(365, 241, (uint8_t*)"reset", LEFT_MODE);
-            BSP_LCD_SetFont(&Font12);
-                // Attatch ticker to this flag. Rotates and draws based on ts input
-            TickerUpdateScreen.attach(manualRotation, 1ms); // 50Hz
-            break;
-        case 3:
-            drawDebugFlag = !drawDebugFlag;
-            break;
-        default:    // should never happen
-            BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Something went wrong (rotaryButtonPressed)", CENTER_MODE);
-            break;
+    for(int i = 0; i < 2; i++){
+        BSP_LCD_Clear(LCD_COLOR_BLACK);
+        switch(menuCounter){
+            case 0:
+                TickerUpdateScreen.detach();
+                TickerNextStep.detach();
+                    // Attatch ticker to this flag. Increments scan progress
+                TickerNextStep.attach(incrementScan, 20ms); // 50Hz
+                break;
+            case 1:
+                TickerUpdateScreen.detach();
+                TickerNextStep.detach();
+                    // Attatch ticker to this flag. Redraws Object
+                TickerUpdateScreen.attach(draw3dObject, 20ms); // 50Hz
+                spinRenderFlag = true;
+                break;
+            case 2:
+                TickerUpdateScreen.detach();
+                TickerNextStep.detach();
+                    // Restore 3D object from save
+                Render3D.restoreSave();
+                    // Draw buttons
+                BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+                BSP_LCD_DrawRect(79, 49, 321, 156);
+                ButtonIncreaseRotationX.drawButton(); ButtonDecreaseRotationX.drawButton();
+                ButtonIncreaseRotationY.drawButton(); ButtonDecreaseRotationY.drawButton();
+                ButtonIncreaseRotationZ.drawButton(); ButtonDecreaseRotationZ.drawButton();
+                ButtonIncreaseFov.drawButton(); ButtonDecreaseFov.drawButton();
+                ButtonResetRotation.drawButton();
+                SliderDrawColour.drawButton();
+                BSP_LCD_SetFont(&Font16);
+                BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
+                BSP_LCD_DisplayStringAt(80, 241, (uint8_t*)"fov-", LEFT_MODE);
+                BSP_LCD_DisplayStringAt(15, 241, (uint8_t*)"fov+", LEFT_MODE);
+                BSP_LCD_DisplayStringAt(365, 241, (uint8_t*)"reset", LEFT_MODE);
+                BSP_LCD_SetFont(&Font12);
+                    // Attatch ticker to this flag. Rotates and draws based on ts input
+                TickerUpdateScreen.attach(manualRotation, 1ms); // 50Hz
+                break;
+            case 3:
+                drawDebugFlag = !drawDebugFlag;
+                break;
+            default:    // should never happen
+                BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Something went wrong (rotaryButtonPressed)", CENTER_MODE);
+                break;
+            while (!(LTDC->CDSR & LTDC_CDSR_VSYNCS)) {}     // Wait for v-sync. (Magic.)
+            toggleLCDLayer();
+        }
     }
 }
 
@@ -165,14 +171,26 @@ void rotaryTurned(void){
     switch(menuCounter){
         case 0:
             BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Menu: Start Scan", CENTER_MODE);
+            toggleLCDLayer();
+            BSP_LCD_ClearStringLine(1);
+            BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Menu: Start Scan", CENTER_MODE);
             break;
         case 1:
+            BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Menu: Rotate Scanned Object", CENTER_MODE);
+            toggleLCDLayer();
+            BSP_LCD_ClearStringLine(1);
             BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Menu: Rotate Scanned Object", CENTER_MODE);
             break;
         case 2:
             BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Menu: Manual Object Rotation", CENTER_MODE);
+            toggleLCDLayer();
+            BSP_LCD_ClearStringLine(1);
+            BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Menu: Manual Object Rotation", CENTER_MODE);
             break;
         case 3:
+            BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Menu: Debug Mode", CENTER_MODE);
+            toggleLCDLayer();
+            BSP_LCD_ClearStringLine(1);
             BSP_LCD_DisplayStringAt(0, LINE(1), (uint8_t *)"Menu: Debug Mode", CENTER_MODE);
             break;
         default:    // should never happen
@@ -245,6 +263,7 @@ void rotatingCubeDemo(void){
     rotationAxis++;
     if(rotationAxis > 2){
         rotationAxis = 0;
+        BSP_LCD_Clear(LCD_COLOR_BLACK);
         TickerUpdateScreen.detach();
     }
 }
@@ -269,6 +288,16 @@ void drawDebugCube(void){
     BSP_LCD_DrawLine(Render3D.xProjected[5]+constants::OFFSET_3D_X, Render3D.yProjected[5]+constants::OFFSET_3D_Y, Render3D.xProjected[6]+constants::OFFSET_3D_X, Render3D.yProjected[6]+constants::OFFSET_3D_Y);
     BSP_LCD_DrawLine(Render3D.xProjected[6]+constants::OFFSET_3D_X, Render3D.yProjected[6]+constants::OFFSET_3D_Y, Render3D.xProjected[7]+constants::OFFSET_3D_X, Render3D.yProjected[7]+constants::OFFSET_3D_Y);
     BSP_LCD_DrawLine(Render3D.xProjected[7]+constants::OFFSET_3D_X, Render3D.yProjected[7]+constants::OFFSET_3D_Y, Render3D.xProjected[4]+constants::OFFSET_3D_X, Render3D.yProjected[4]+constants::OFFSET_3D_Y);    
+}
+
+void toggleLCDLayer(void){
+    if(activeLCDLayer == 1){
+        BSP_LCD_SelectLayer(0); BSP_LCD_SetLayerVisible(1, ENABLE); BSP_LCD_SetLayerVisible(0, DISABLE);
+        activeLCDLayer = 0;
+    }else{
+        BSP_LCD_SelectLayer(1); BSP_LCD_SetLayerVisible(0, ENABLE); BSP_LCD_SetLayerVisible(1, DISABLE);
+        activeLCDLayer = 1;
+    }
 }
 
 
@@ -355,16 +384,30 @@ int main(){
     BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
     BSP_LCD_Clear(LCD_COLOR_BLACK);
 
+        // Setup another LCD layer
+    BSP_LCD_LayerDefaultInit(0, LCD_FB_START_ADDRESS +(272*480*4));
+    BSP_LCD_SelectLayer(0);
+    BSP_LCD_DisplayStringAt(0, LINE(5), (uint8_t *)"14074479 MAOUDISA", CENTER_MODE);
+    HAL_Delay(1000);
+    BSP_LCD_SetFont(&Font12);
+    BSP_LCD_SetBackColor(LCD_COLOR_TRANSPARENT);
+    BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+    BSP_LCD_Clear(LCD_COLOR_BLACK);
+
+
         // Initialize touchscreen
     BSP_TS_Init(480, 272);
 
-
+    BSP_LCD_SelectLayer(0); BSP_LCD_SetLayerVisible(0, ENABLE); BSP_LCD_SetLayerVisible(1, DISABLE);
         // Attatch ticker to this flag. Using this demo as a splash screen
     TickerUpdateScreen.attach(rotatingCubeDemo, 1ms); 
 
-
     // Do nothing here until a flag is set
     while(1) {
+
+        while (!(LTDC->CDSR & LTDC_CDSR_VSYNCS)) {}     // Wait for v-sync. (Magic.)
+        toggleLCDLayer();
+
             // Manual control over 3D render (Slow)
         if(rotateTouchFlag == true){
                 // Relinquish control of Semaphore so TSButton thread can run
@@ -374,11 +417,10 @@ int main(){
                 // Generate coordinates, Clear Object, Draw image. (Only clear immidiately before drawing to reduce strobing)
                 // Buttons are not redrawn, But also not cleared. Faster. (Exception > Sliders)
             Render3D.generateProjected();
-            //SCB_CleanDCache();
+            SliderDrawColour.drawButton();
             if(loadTestCubeFlag == true){
                 drawDebugCube();
             }else{
-                while (!(LTDC->CDSR & LTDC_CDSR_VSYNCS)) {}     // Wait for v-sync. (Magic.)
                 BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
                 BSP_LCD_FillRect(80, 50, 320, 155);
                 BSP_LCD_SetTextColor(drawColour);
@@ -396,12 +438,16 @@ int main(){
             updatePeripherals(IR.getDistance(), desiredScanAngle, depthMapLayer, RangePot.readVoltage());
             (scanningClockwise == true) ? desiredScanAngle++ : desiredScanAngle--;
             if(desiredScanAngle >= 90 || desiredScanAngle < 0){
+                for(int i = 0; i < 2; i++){
+                    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+                    BSP_LCD_FillRect(0, 22, 300, 250);
+                    while (!(LTDC->CDSR & LTDC_CDSR_VSYNCS)) {}     // Wait for v-sync. (Magic.)
+                    toggleLCDLayer();
+                }
                 scanningClockwise = !scanningClockwise;
                 lastX = 0, lastY = 0;
                 depthMapLayer++;
                 depthMapLayer++;
-                BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
-                BSP_LCD_FillRect(0, 22, 300, 250);
                     // Check for scan completion. Detatch ticker & save Vertices
                 if(depthMapLayer > 90){
                     TickerNextStep.detach();
@@ -437,12 +483,20 @@ int main(){
                     for(int i = 0; i < constants::MAX_VERTICES -1; i++){ // Connect each projected vertex to its neighbour
                         BSP_LCD_DrawLine(Render3D.xProjected[i] +constants::OFFSET_3D_X, Render3D.yProjected[i] +constants::OFFSET_3D_Y, Render3D.xProjected[i+1] +constants::OFFSET_3D_X, Render3D.yProjected[i+1] +constants::OFFSET_3D_Y);
                     }
+                    while (!(LTDC->CDSR & LTDC_CDSR_VSYNCS)) {}     // Wait for v-sync. (Magic.)
+                    toggleLCDLayer();
                         // Restore vertex data from save
                     Render3D.restoreSave();
                 }
                 rotationAxis++; // Cycle axis of rotation every full rotation
                 if(rotationAxis > 2){
                     rotationAxis = 0;
+                    BSP_LCD_Clear(LCD_COLOR_BLACK);
+                    while (!(LTDC->CDSR & LTDC_CDSR_VSYNCS)) {}     // Wait for v-sync. (Magic.)
+                    toggleLCDLayer();
+                    BSP_LCD_Clear(LCD_COLOR_BLACK);
+                    while (!(LTDC->CDSR & LTDC_CDSR_VSYNCS)) {}     // Wait for v-sync. (Magic.)
+                    toggleLCDLayer();
                     TickerUpdateScreen.detach();
                 }
             }else{
