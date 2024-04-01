@@ -126,6 +126,8 @@ void rotaryButtonPressed(void){
                 // Restore 3D object from save
             Render3D.restoreSave();
                 // Draw buttons
+            BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+            BSP_LCD_DrawRect(79, 49, 321, 156);
             ButtonIncreaseRotationX.drawButton(); ButtonDecreaseRotationX.drawButton();
             ButtonIncreaseRotationY.drawButton(); ButtonDecreaseRotationY.drawButton();
             ButtonIncreaseRotationZ.drawButton(); ButtonDecreaseRotationZ.drawButton();
@@ -213,7 +215,7 @@ void updatePeripherals(float currentIrDistance, float currentScanAngle, uint8_t 
     char text [64];
          // Clear line. Display scan progress. Draw 2D views
     sprintf((char*)text, "Distance: %f Layer: %d Angle: %f MaxRange: %d", currentIrDistance, currentScanLayer, currentScanAngle, rangeCutoff);
-    BSP_LCD_ClearStringLine(LINE(0));
+    //BSP_LCD_ClearStringLine(LINE(0));
     BSP_LCD_DisplayStringAt(0, LINE(0), (uint8_t *)&text, LEFT_MODE);
     drawRadarView(currentIrDistance, currentScanAngle);
     drawDepthMap(currentIrDistance, currentScanAngle, currentScanLayer, rangeCutoff);
@@ -363,7 +365,6 @@ int main(){
 
     // Do nothing here until a flag is set
     while(1) {
-
             // Manual control over 3D render (Slow)
         if(rotateTouchFlag == true){
                 // Relinquish control of Semaphore so TSButton thread can run
@@ -373,12 +374,11 @@ int main(){
                 // Generate coordinates, Clear Object, Draw image. (Only clear immidiately before drawing to reduce strobing)
                 // Buttons are not redrawn, But also not cleared. Faster. (Exception > Sliders)
             Render3D.generateProjected();
-            while (!(LTDC->CDSR & LTDC_CDSR_VSYNCS)) {}     // Wait for v-sync. (Magic.)
-            BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
-            BSP_LCD_DrawRect(79, 49, 321, 156);
+            //SCB_CleanDCache();
             if(loadTestCubeFlag == true){
                 drawDebugCube();
             }else{
+                while (!(LTDC->CDSR & LTDC_CDSR_VSYNCS)) {}     // Wait for v-sync. (Magic.)
                 BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
                 BSP_LCD_FillRect(80, 50, 320, 155);
                 BSP_LCD_SetTextColor(drawColour);
@@ -431,7 +431,6 @@ int main(){
                 for(int j = 0; j < 360; j++){
                     Render3D.rotateVertices(j, rotationAxis);
                     Render3D.generateProjected();
-                    while (!(LTDC->CDSR & LTDC_CDSR_VSYNCS)) {}     // Wait for v-sync. (Magic.)
                     BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
                     BSP_LCD_FillRect(80, 50, 320, 155);
                     BSP_LCD_SetTextColor(drawColour);

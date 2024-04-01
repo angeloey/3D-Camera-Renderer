@@ -134,6 +134,7 @@ Slider::Slider(uint16_t xMin, uint16_t xMax, uint16_t yMin, uint16_t yMax, uint3
 
     // Draw button and its corresponding symbol
 void Slider::drawButton(){
+    while (!(LTDC->CDSR & LTDC_CDSR_VSYNCS)) {}     // Wait for v-sync. (Magic.)
     BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
     if(_horizontal){
         BSP_LCD_DrawLine(_trackStart, _yMin + ((_yMax - _yMin)/2), _trackEnd, _yMin + ((_yMax - _yMin)/2));
