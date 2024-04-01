@@ -29,7 +29,7 @@ the tutorial material, all working\
 as expected."*
 
 #### Version Control (Regular Commits and a Clear Workflow):
-Another goal of the project is to provide a meaningful and well commented/documented update to the repository at regular intervals. \ 
+Another goal of the project is to provide a meaningful and well commented/documented update to the repository at regular intervals. \
 (I will aim for daily commits, however: life waits for no man.) \
 Any periods without a commit will be compensated for in magnitude or quantity once updates resume. \
 There are 27 days between the start of this project on March 6th, and the due date April 2nd, therefore I will ensure there are at MINIMUM, 27 commits of
@@ -50,7 +50,7 @@ Regular updates of some significance, with an accurate commit message.\
 No "added some code" commits.\
 Clear workflow and direction should be visibile throughout commit history (once target embedded system has been decided).\
 
-this is with the intention of achieving the following assignment criteria excerpt:\
+this is with the intention of achieving the following assignment criteria excerpt:
 
 *"Evidence of regular daily\
 commits over a longer time\
@@ -80,17 +80,17 @@ identifiers and an attempt at\
 documentation. Code contains\
 no linting errors or warnings."*
 
-Additional overlap from the following excerpt:\
+Additional overlap from the following excerpt:
 
 *"Use of custom classes, objects,\
 and OOP concepts."*
 
 ### Naming Convention adhered to:
-Variables: camelCase\
-User-Defined/Custom Types: PascalCase\
-Constants: CAPS_SEPARATED_BY_UNDERSCORES\
-Private Member Variables: \_underscorePrefixedCamelCase\
-Descriptive Self-Documenting identifiers are mandatory. \
+- Variables: camelCase\
+- User-Defined/Custom Types: PascalCase\
+- Constants: CAPS_SEPARATED_BY_UNDERSCORES\
+- Private Member Variables: \_underscorePrefixedCamelCase\
+- Descriptive Self-Documenting identifiers are mandatory. 
 
 #### Complexity & Architechture (Embedded Code)
 
@@ -169,7 +169,7 @@ The system uses a combination of hard and soft interrupts, polling, and multithr
 This was an intentional design choice in order to demonstrate/implement a wider range of techniques. \
 Hardware interrupts are used to control the physical IO of the device, such as the rotary encoder & menu navigation. \
 Software interrupts (Tickers) are used to progress through the scanning process, as well as to refresh the LCD display. \
-The touchscreen interface is handled by its own dedicated thread, running in paralell to the main thread of the device. Semaphores are used to manage the individual threads, and to ensure a thread only uses system resources when necesary. \
+The touchscreen interface is handled by its own dedicated thread, running in paralell to the main thread of the device. Semaphores are used to manage the individual threads, and to ensure a thread only uses system resources when necessary. \
 A polling scheme is used to manage the UART interface.  \
 A flag polling system is also used to manage routines triggered by interrupts without executing them inside the ISR, both to avoid unwanted mutex locks, 
 and to adhere to best practices (i.e. no delays or lengthy functions inside the ISR). 
@@ -244,10 +244,16 @@ Third-Party Code: \
 
 The scan system was originally made using an ultrasonic sensor, and a library for this sensor sourced from mbed.org, however the output was noisy and I intend to write all libraries for components myself. To solve this issue replaced with IR range sensor (much less noisy output) and wrote library from scratch (My-IR-Lib).
 
-In order to target the IR Range sensor at a specific point, a Mount was designed and 3D-Printed, the latest version of this model in STL file is included in the repository in folder: 3D Print Files
+In order to target the IR Range sensor at a specific point, a Mount was designed and 3D-Printed, the latest version of this model in STL format is included in the repository under folder: 3D Print Files
 
-Rotating a perspective projection render in 3 dimensions is computationally expensive, and somewhat out of reach for a device such as the STM32F7 to do in any reasonable amount of time. However this system takes advantage of a "workaround". Provided you only rotate around one axis at a time, a perspective projection can be rotated using the 2D rotation matrix, which is much less computationally expensive.
-To provide rotation around all 3 axis, this system rotates around one axis, saves the result to a buffer, and then rotates the resulting buffer around another axis sequentially. this workaround means that the system can appear to rotate a render around 3 axis simultaneous, albeit while taking 3 times as long to do so.
+The image below shows from left to right, Versions 1, 2, 3, & 4, of the aforementioned mount:
+
+![Mounts_Cropped_2](https://github.coventry.ac.uk/storage/user/6796/files/c0bbbd6b-cb62-418b-baf3-95458bf07fb2)
+
+
+Rotating a perspective projection render in 3 dimensions is computationally expensive, and somewhat out of reach for a device such as the STM32F7 to do in any reasonable amount of time. However this system takes advantage of a "workaround". 
+Provided you only rotate around one axis at a time, a perspective projection can be rotated using the 2D rotation matrix, which is much less computationally expensive.
+To provide rotation around all 3 axis, this system rotates around one axis, saves the result to a buffer, and then rotates the resulting buffer around another axis sequentially. this workaround means that the system can appear to rotate a render around 3 axis simultaneously, albeit while taking 3 times as long to do so.
 
 Functionality was written into the stepper library to enable microstepping, however the STM32f7 Board being used for this system only has 2 onboard ADC's and the implementation (the only way i could think of to do it in software) required 4 ADC's to operate. 
 As the step size of the provided stepper motor is too large for the degree of accuracy desired, the system only rotates the stepper every 4 degrees instead of every 1 degree, and takes 4 measurements during its travel time to acquire the closest approximation I could get. 
