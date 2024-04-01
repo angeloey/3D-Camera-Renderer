@@ -86,10 +86,10 @@ Additional overlap from the following excerpt:
 and OOP concepts."*
 
 ### Naming Convention adhered to:
-- Variables: camelCase\
-- User-Defined/Custom Types: PascalCase\
-- Constants: CAPS_SEPARATED_BY_UNDERSCORES\
-- Private Member Variables: \_underscorePrefixedCamelCase\
+- Variables: camelCase
+- User-Defined/Custom Types: PascalCase
+- Constants: CAPS_SEPARATED_BY_UNDERSCORES
+- Private Member Variables: /_underscorePrefixedCamelCase
 - Descriptive Self-Documenting identifiers are mandatory. 
 
 #### Complexity & Architechture (Embedded Code)
@@ -116,13 +116,16 @@ A device which scans a scene along the X and Y axis, while recording Z axis data
 Basic operation:
 The device uses a stepper motor and a servo to take range measurements in increments of 1 degrees, in a 90x90 degree FOV.\
 The range measurements are made using an IR Sensor, the maximum range of which can be configured using an potentiometer.\
-During and after completion of the scan, the data recorded is used to represent the scanned scene on the LCD Screen. The user can interact with a 3D render of the scanned scene via the touchscreen, or by selecting an option to automaticcaly rotate the render via the rotary encoder menu.\
+During and after completion of the scan, the data recorded is used to represent the scanned scene on the LCD Screen. The user can interact with a 3D render of the scanned scene via the touchscreen, or by selecting an option to automatically rotate the render via the rotary encoder menu.\
 Uart Commands can also be used to start a scan remotely.
 
 The system also contains customization options such a colour slider, and fov adjustment, which are modified in their corresponding menu via the touchscreen interface.
 
 Verification of Successful Operation:
 The fundamental operation of the system can be considered successful if a scene/object can be scanned by the device, producing a render which can be interacted with by user. I.e. can be rotate around all 3 Axis at will. A wide array of diferent technologies and peripherals will be used by the system to achieve this, and will work together without error or conflict.
+
+
+
 
 
 ## 2 - Hardware Design
@@ -159,7 +162,11 @@ Connection Diagram: \
 System Runs on MbedOS 6 \
 MbedOS Docs: https://os.mbed.com/docs/mbed-os/v6.16/introduction/index.html 
 
-To stay within the "spirit" of the Embedded Systems Programming module, the System opts for software control over hardware control, via the GPIO, ADC, & DAC pins built in to the STM32f746NG-DISCO, with the only exception being the use of a ULN2803 Darlington Array IC which is used as a *driver* the stepper motor. Stepper motor *control* is achieved via software implementation however.
+To stay within the "spirit" of the Embedded Systems Programming module, the System opts for software control over hardware control, via the GPIO, ADC, & DAC pins built in to the STM32f746NG-DISCO, with the only exception being the use of a ULN2803 Darlington Array IC which is used as a *driver* for the stepper motor. Stepper motor *control* is achieved via software implementation however.
+
+
+
+
 
 ## 3 - Embedded Code Implementation and Architechture
 
@@ -175,6 +182,11 @@ A flag polling system is also used to manage routines triggered by interrupts wi
 and to adhere to best practices (i.e. no delays or lengthy functions inside the ISR). 
 
 Functionality of peripheral devices is contained and managed by individual Objects & corresponding libraries. 
+
+All source files are commented where apporopriate to provide a reasonable level of documentation, "Pseudo Diagrams" have been drawn using comments in files where a greater level of explanation was felt necessary, example below from My-Stepper-Lib:
+
+![image](https://github.coventry.ac.uk/storage/user/6796/files/95734af4-9ebb-4856-bf2c-dd8f5a78eafe)
+
 
 ### Tasks Handled by Software
 
@@ -206,7 +218,7 @@ __Description__: A barebones uart interface is used to trigger the scanning rout
 
 __Real-time Constraints__: Characters are added to a buffer as and when they are recieved by the device, not particularly time-critical and is polled once any set flags have been acknowledged.
 
-__Responiveness__: No noticeable delay by the user. Effectively immediate from a humans POV.
+__Responsiveness__: No noticeable delay by the user. Effectively immediate from a humans POV.
 
 ### 3D Rendering:
 __Description__: The device is capable of representing the data recorded by the scanning routine in the form of a weak perspective projection. The files inside folder My-3D-Lib are heavily commented to explain how the 3D rendering of the system is achieved, below is an attempt to illustrate how the "Projected" pixel coordinates are calculated from the vertices recorded by the Scanning routine, for the X axis. This process is repeated for each coordinate recorded (90 x 90 = 8100).
@@ -229,14 +241,14 @@ __Responsiveness__: When rotating and inspecting the render, the system becomes 
 
 
 ### Source Code Authors
-Files written by me: \
+Files written by me: 
  - Everything in a folder labelled "My-X"
  - main.cpp
  - README.md
  - Unit tests inside folder TESTS (Made from boilerplate provided in mbed docs, link to boilerplate provided as comments inside each file).
  All files are labelled with Name and SID as top comments.
 
-Third-Party Code: \
+Third-Party Code: 
  - BSP_DISCO_F746NG.lib
  - Mbed-OS.lib
 
@@ -263,6 +275,7 @@ I am unable to find any information on this specific stepper online, but measuri
 
 
 
+
 ## 4 - Evaluation 
 ### Implementation Successfulness
 The system achieves the criteria outlined in the proposal, it is capable of scanning scenes or objects and generating a 3D render which the user can freely rotate along all three axis. It utilises a wide range of technologies and peripherals, which operate without conflict. 
@@ -270,11 +283,14 @@ The system can be considered a sucessful prototype.
 
 Upon reflection, some shortcomings of the device or things I would add given more time include:
 - Ability to export renders to another device (maybe as .STL or similar).
-- The stepper motor used for the project works fine as a proof of concept/prototype however in future iteration i would use a better/more accurate one
+- The stepper motor used for the project works fine as a proof of concept/prototype however in a future iteration i would substitute it for a stepper with a smaller minimum step angle, or use a MCU with multiple DAC's as to utilize microstepping
 - Create an enclosure or housing for the device (Maybe a battery powered handheld iteration)
 - Create a PCB implementation instead of relying on a breadboard
 - Add greater functionality to the uart interface. a HC-05 module could be used along side a terminal app, to control the device from a phone
 
 ### Group Members:
 Angelo Maoudis 14074479 \
-Commits as: maoudisa(University Github) & angeloey (Home Github). \
+Commits as: maoudisa(University Github) & angeloey (Home Github). 
+
+## Link to Video Demonstration:
+
