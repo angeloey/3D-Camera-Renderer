@@ -74,7 +74,7 @@ int activeLCDLayer = 0;
     // Initialization, Peripheral Objects/Structs.
 IrSense IR(A0);                                     // initialize IR sensor, reading from Pin A0
 Pot RangePot(A1);                                   // initialize Potentiometer, reading from Pin A1
-Servo Servo(D0, 180, 2.5, 1.5);                     // initialize Servo motor, on pin D0, with a 180 degree range between 1.5 and 2ms.
+Servo Servo(D0, 90, 2, 1.5);                     // initialize Servo motor, on pin D0, with a 180 degree range between 1.5 and 2ms.
 Stepper Stepper(D1, D2, D3, D4, 7.5);               // initialize Stepper motor, on pins D1, D2, D3, D4, with a step angle of 7.5
 Rotary Encoder(D5, D6, D7, &rotaryButtonPressed, &rotaryTurned);    // initialize Rotary Encoder on D5,D6,D7, and pass functions to object
 //MicroStepper Stepper(A5, A4, A3, A2, 7.5);        // Cant use microstepping as the board only has 2 DAC outs :(
@@ -235,7 +235,7 @@ void updatePeripherals(float currentIrDistance, float currentScanAngle, uint8_t 
     if(currentIrDistance > rangeCutoff) {currentIrDistance = rangeCutoff; }
     char text [64];
          // Clear line. Display scan progress. Draw 2D views
-    sprintf((char*)text, "Distance: %f Layer: %d Angle: %f MaxRange: %d", currentIrDistance, currentScanLayer, currentScanAngle, rangeCutoff);
+    sprintf((char*)text, "Distance: %f Layer: %d Angle: %f MaxRange: %d    ", currentIrDistance, currentScanLayer, currentScanAngle, rangeCutoff);
     BSP_LCD_DisplayStringAt(0, LINE(0), (uint8_t *)&text, LEFT_MODE);
     drawRadarView(currentIrDistance, currentScanAngle);
     drawDepthMap(currentIrDistance, currentScanAngle, currentScanLayer, rangeCutoff);
