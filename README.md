@@ -156,7 +156,8 @@ Stepper Motor Datsheet: University Provided, cannot find information online, gen
 ULN2803 Darlington Array Datasheet: https://www.st.com/resource/en/datasheet/uln2801a.pdf
 
 Connection Diagram: \
-![image](https://github.coventry.ac.uk/storage/user/6796/files/ee9ec413-ffa5-4819-95da-15ec06ea4bdf)
+![connection diagram](https://github.com/user-attachments/assets/8af2132c-5bfc-4af8-a558-99e002f5d8c0)
+
 
 
 System Runs on MbedOS 6 \
@@ -185,7 +186,8 @@ Functionality of peripheral devices is contained and managed by individual Objec
 
 All source files are commented where apporopriate to provide a reasonable level of documentation, "Pseudo Diagrams" have been drawn using comments in files where a greater level of explanation was felt necessary, example below from My-Stepper-Lib:
 
-![image](https://github.coventry.ac.uk/storage/user/6796/files/95734af4-9ebb-4856-bf2c-dd8f5a78eafe)
+![pseudodiagrams](https://github.com/user-attachments/assets/f66556e5-5a93-4acc-a634-694cf164ab07)
+
 
 
 ### Tasks Handled by Software
@@ -223,7 +225,8 @@ __Responsiveness__: No noticeable delay by the user. Effectively immediate from 
 ### 3D Rendering:
 __Description__: The device is capable of representing the data recorded by the scanning routine in the form of a weak perspective projection. The files inside folder My-3D-Lib are heavily commented to explain how the 3D rendering of the system is achieved, below is an attempt to illustrate how the "Projected" pixel coordinates are calculated from the vertices recorded by the Scanning routine, for the X axis. This process is repeated for each coordinate recorded (90 x 90 = 8100).
 
-![illustration](https://github.coventry.ac.uk/storage/user/6796/files/8975266f-458d-43b4-8f1d-a7de5b1724ef) 
+![3d_rendering](https://github.com/user-attachments/assets/7ac2d71b-2840-4ece-a2ca-0cd83f634491)
+
                            
 
  Triangles (X, Adjacent, C) and (Xp, Focallength, C) are similar, \
@@ -260,7 +263,8 @@ In order to target the IR Range sensor at a specific point, a Mount was designed
 
 The image below shows from left to right, Versions 1, 2, 3, & 4, of the aforementioned mount:
 
-![Mounts_Cropped_2](https://github.coventry.ac.uk/storage/user/6796/files/c0bbbd6b-cb62-418b-baf3-95458bf07fb2)
+![3d_mounts](https://github.com/user-attachments/assets/318db870-81ea-400f-88b6-c56695c3f152)
+
 
 
 Rotating a perspective projection render in 3 dimensions is computationally expensive, and somewhat out of reach for a device such as the STM32F7 to do in any reasonable amount of time. However this system takes advantage of a "workaround". 
